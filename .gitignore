@@ -16,3 +16,7 @@ coverage/
 npm-debug.log*
 .DS_Store
 .eslintcache
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
