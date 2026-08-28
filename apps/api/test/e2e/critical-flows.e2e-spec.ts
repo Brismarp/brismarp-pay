@@ -1,8 +1,7 @@
-import { Test } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/prisma/prisma.service';
+import { createTestApp } from './create-test-app';
 
 /**
  * Testes E2E dos fluxos críticos definidos no escopo (seção 20):
@@ -29,6 +28,23 @@ const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
 const TEST_REDIS_URL = process.env.TEST_REDIS_URL;
 const describeIfInfra = TEST_DATABASE_URL && TEST_REDIS_URL ? describe : describe.skip;
 
+function cookieHeader(setCookie: string[] | string | undefined): string {
+  const list = !setCookie ? [] : Array.isArray(setCookie) ? setCookie : [setCookie];
+  return list.map((part) => part.split(';')[0]).join('; ');
+}
+
+function cnpjFromSeed(seed: number): string {
+  const base = String(seed).padStart(12, '1').slice(-12);
+  const digit = (value: string, weights: number[]) => {
+    const sum = [...value].reduce((acc, d, i) => acc + Number(d) * weights[i], 0);
+    const remainder = sum % 11;
+    return remainder < 2 ? 0 : 11 - remainder;
+  };
+  const d1 = digit(base, [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+  const d2 = digit(base + d1, [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]);
+  return base + String(d1) + String(d2);
+}
+
 describeIfInfra('Fluxos críticos (E2E com PostgreSQL + Redis)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
@@ -36,7 +52,7 @@ describeIfInfra('Fluxos críticos (E2E com PostgreSQL + Redis)', () => {
   const uniqueSuffix = Date.now();
   const userEmail = `teste.e2e.${uniqueSuffix}@brismarpay.com`;
   const userPassword = 'SenhaForte123';
-  const companyCnpj = '11222333000181'; // CNPJ de exemplo com dígitos verificadores válidos
+  const companyCnpj = cnpjFromSeed(uniqueSuffix);
 
   let accessToken: string;
   let companyId: string;
@@ -47,20 +63,16 @@ describeIfInfra('Fluxos críticos (E2E com PostgreSQL + Redis)', () => {
     process.env.DATABASE_URL = TEST_DATABASE_URL;
     process.env.REDIS_URL = TEST_REDIS_URL;
 
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
-    app = moduleRef.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
-    app.setGlobalPrefix('v1');
-    await app.init();
-
-    prisma = moduleRef.get(PrismaService);
+    app = await createTestApp();
+    prisma = app.get(PrismaService);
   });
 
   afterAll(async () => {
-    // Limpeza do usuário/empresa de teste — não deixa lixo acumulando no banco de teste.
-    if (companyId) await prisma.company.delete({ where: { id: companyId } }).catch(() => undefined);
-    await prisma.user.delete({ where: { email: userEmail } }).catch(() => undefined);
-    await app.close();
+    if (prisma) {
+      if (companyId) await prisma.company.delete({ where: { id: companyId } }).catch(() => undefined);
+      await prisma.user.delete({ where: { email: userEmail } }).catch(() => undefined);
+    }
+    if (app) await app.close();
   });
 
   it('1. Cadastro: cria conta e retorna access token', async () => {
@@ -148,6 +160,17 @@ describeIfInfra('Fluxos críticos (E2E com PostgreSQL + Redis)', () => {
     expect(customerId).toEqual(expect.any(String));
   });
 
+  it('4b. Edição de cliente atualiza nome e e-mail', async () => {
+    const res = await request(app.getHttpServer())
+      .patch(`/v1/companies/${companyId}/customers/${customerId}`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ name: 'Cliente Editado', email: 'editado@teste.com' })
+      .expect(200);
+
+    expect(res.body.name).toBe('Cliente Editado');
+    expect(res.body.email).toBe('editado@teste.com');
+  });
+
   it('5. Criação de cobrança (cartão, aprovada pelo mock provider)', async () => {
     const idempotencyKey = `e2e-${uniqueSuffix}`;
 
@@ -209,6 +232,81 @@ describeIfInfra('Fluxos críticos (E2E com PostgreSQL + Redis)', () => {
       .patch(`/v1/companies/${companyId}/charges/${chargeId}/cancel`)
       .set('Authorization', `Bearer ${accessToken}`)
       .expect(400);
+  });
+
+  it('8b. Estorno integral marca a cobrança como REFUNDED', async () => {
+    const res = await request(app.getHttpServer())
+      .patch(`/v1/companies/${companyId}/charges/${chargeId}/refund`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ reason: 'e2e' })
+      .expect(200);
+
+    expect(res.body.status).toBe('REFUNDED');
+  });
+
+  it('8c. Segundo estorno é rejeitado', async () => {
+    await request(app.getHttpServer())
+      .patch(`/v1/companies/${companyId}/charges/${chargeId}/refund`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({})
+      .expect(409);
+  });
+
+  it('8d. PIX pendente pode ser confirmado no sandbox', async () => {
+    const created = await request(app.getHttpServer())
+      .post(`/v1/companies/${companyId}/charges`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ method: 'PIX', amountCents: 2500, customerId, idempotencyKey: `e2e-pix-${uniqueSuffix}` })
+      .expect(201);
+
+    expect(created.body.status).toBe('PENDING');
+
+    const confirmed = await request(app.getHttpServer())
+      .patch(`/v1/companies/${companyId}/charges/${created.body.id}/simulate-confirmation`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    expect(confirmed.body.status).toBe('APPROVED');
+  });
+
+  it('8e. Dashboard inclui o estorno no período', async () => {
+    const res = await request(app.getHttpServer())
+      .get(`/v1/companies/${companyId}/dashboard/summary`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .expect(200);
+
+    expect(res.body.refundCount).toBeGreaterThanOrEqual(1);
+  });
+
+  it('8f. Refresh com cookie HttpOnly emite novo access token', async () => {
+    const login = await request(app.getHttpServer())
+      .post('/v1/auth/login')
+      .send({ email: userEmail, password: userPassword })
+      .expect(200);
+
+    const cookies = cookieHeader(login.headers['set-cookie']);
+    expect(cookies).toContain('bpay_refresh_token=');
+
+    const refreshed = await request(app.getHttpServer())
+      .post('/v1/auth/refresh')
+      .set('Cookie', cookies)
+      .send({})
+      .expect(200);
+
+    expect(refreshed.body.accessToken).toEqual(expect.any(String));
+  });
+
+  it('8g. Logout invalida o refresh cookie', async () => {
+    const login = await request(app.getHttpServer())
+      .post('/v1/auth/login')
+      .send({ email: userEmail, password: userPassword })
+      .expect(200);
+
+    const cookies = cookieHeader(login.headers['set-cookie']);
+
+    await request(app.getHttpServer()).post('/v1/auth/logout').set('Cookie', cookies).send({}).expect(200);
+
+    await request(app.getHttpServer()).post('/v1/auth/refresh').set('Cookie', cookies).send({}).expect(401);
   });
 
   it('9. Isolamento de tenant: outro usuário não vinculado não acessa a empresa', async () => {

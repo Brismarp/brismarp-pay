@@ -1,8 +1,7 @@
-import { Test } from '@nestjs/testing';
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication } from '@nestjs/common';
 import request from 'supertest';
-import { AppModule } from '../../src/app.module';
 import { PrismaService } from '../../src/prisma/prisma.service';
+import { createTestApp } from './create-test-app';
 
 const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
 const TEST_REDIS_URL = process.env.TEST_REDIS_URL;
@@ -60,12 +59,8 @@ describeIfInfra('API pública por API Key (E2E com PostgreSQL + Redis)', () => {
     process.env.DATABASE_URL = TEST_DATABASE_URL;
     process.env.REDIS_URL = TEST_REDIS_URL;
 
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
-    app = moduleRef.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
-    app.setGlobalPrefix('v1');
-    await app.init();
-    prisma = moduleRef.get(PrismaService);
+    app = await createTestApp();
+    prisma = app.get(PrismaService);
   });
 
   afterAll(async () => {
