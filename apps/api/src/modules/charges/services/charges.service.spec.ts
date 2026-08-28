@@ -27,7 +27,8 @@ function createTxMock() {
       findUniqueOrThrow: jest.fn().mockResolvedValue(currentCharge),
     },
     chargeEvent: { create: jest.fn() },
-    transaction: { create: jest.fn() },
+    transaction: { create: jest.fn(), findFirst: jest.fn() },
+    refund: { create: jest.fn() },
   };
 }
 
@@ -40,6 +41,7 @@ describe('ChargesService', () => {
     createPayment: jest.Mock;
     getPayment: jest.Mock;
     cancelPayment: jest.Mock;
+    refundPayment: jest.Mock;
   };
   let redis: {
     getJson: jest.Mock;
@@ -55,6 +57,7 @@ describe('ChargesService', () => {
     prisma = {
       customer: { findFirst: jest.fn() },
       charge: { findUnique: jest.fn(), findFirst: jest.fn(), findMany: jest.fn(), count: jest.fn() },
+      refund: { findFirst: jest.fn() },
       auditLog: { create: jest.fn() },
       $transaction: jest.fn(async (fnOrArray: any) => {
         if (typeof fnOrArray === 'function') return fnOrArray(tx);
@@ -69,6 +72,7 @@ describe('ChargesService', () => {
       createPayment: jest.fn(),
       getPayment: jest.fn(),
       cancelPayment: jest.fn(),
+      refundPayment: jest.fn().mockResolvedValue(undefined),
     };
     redis = {
       getJson: jest.fn().mockResolvedValue(null),
@@ -214,6 +218,57 @@ describe('ChargesService', () => {
 
       await expect(service.cancel('company-1', 'charge-1', 'user-1')).rejects.toThrow(BadRequestException);
       expect(paymentProvider.cancelPayment).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('refund', () => {
+    const approvedCharge = {
+      id: 'charge-1',
+      companyId: 'company-1',
+      amountCents: 5_000,
+      status: 'APPROVED',
+      providerPaymentId: 'mock_123',
+    };
+
+    it('estorna cobrança aprovada, lança REFUND do líquido e marca REFUNDED', async () => {
+      prisma.charge.findFirst.mockResolvedValue(approvedCharge);
+      prisma.refund.findFirst.mockResolvedValue(null);
+      prisma.__tx.charge.findUniqueOrThrow.mockResolvedValue(approvedCharge);
+      prisma.__tx.transaction.findFirst.mockResolvedValue({ netAmountCents: 4_875 });
+      prisma.__tx.refund.create.mockResolvedValue({ id: 'refund-1' });
+      prisma.__tx.charge.update.mockResolvedValue({ ...approvedCharge, status: 'REFUNDED' });
+
+      await service.refund('company-1', 'charge-1', 'user-1', 'cliente pediu');
+
+      expect(paymentProvider.refundPayment).toHaveBeenCalledWith({
+        providerPaymentId: 'mock_123',
+        amountCents: 5_000,
+        reason: 'cliente pediu',
+      });
+      expect(prisma.__tx.refund.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ amountCents: 5_000, status: 'succeeded' }) }),
+      );
+      expect(ledgerService.append).toHaveBeenCalledWith(
+        prisma.__tx,
+        expect.objectContaining({ type: 'REFUND', amountCents: 4_875 }),
+      );
+      expect(prisma.__tx.charge.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: { status: 'REFUNDED' } }),
+      );
+    });
+
+    it('rejeita estorno de cobrança pendente', async () => {
+      prisma.charge.findFirst.mockResolvedValue({ ...approvedCharge, status: 'PENDING' });
+
+      await expect(service.refund('company-1', 'charge-1', 'user-1')).rejects.toThrow(BadRequestException);
+      expect(paymentProvider.refundPayment).not.toHaveBeenCalled();
+    });
+
+    it('rejeita segundo estorno da mesma cobrança', async () => {
+      prisma.charge.findFirst.mockResolvedValue({ ...approvedCharge, status: 'REFUNDED' });
+
+      await expect(service.refund('company-1', 'charge-1', 'user-1')).rejects.toThrow(ConflictException);
+      expect(paymentProvider.refundPayment).not.toHaveBeenCalled();
     });
   });
 });
