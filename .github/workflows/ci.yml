@@ -52,6 +52,19 @@ jobs:
         run: npm run prisma:deploy
       - name: Build
         run: npm run build
+      - name: Boot smoke
+        run: |
+          npm run start:prod &
+          pid=$!
+          trap 'kill $pid 2>/dev/null' EXIT
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:3001/v1/health | grep -q '"status":"ok"'; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo 'API did not become healthy in time'
+          exit 1
       - name: Unit tests
         run: npm test -- --runInBand --coverage
       - name: E2E tests
