@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { apiClient } from '@/lib/api-client';
 
 const LINKS = [
   { href: '/admin', label: 'Dashboard' },
@@ -11,6 +12,17 @@ const LINKS = [
 
 export function AdminNav() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  async function handleLogout() {
+    try {
+      await apiClient.logout();
+    } catch {
+      // still drop the local session if the cookie is already gone
+    }
+    sessionStorage.removeItem('bpay_access_token');
+    router.push('/login');
+  }
 
   return (
     <nav className="border-b border-brand-900 bg-brand-900">
@@ -30,6 +42,13 @@ export function AdminNav() {
         <Link href="/dashboard" className="text-sm text-brand-200 ml-auto">
           Sair do admin
         </Link>
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="text-sm text-brand-200 hover:text-white"
+        >
+          Sair
+        </button>
       </div>
     </nav>
   );
