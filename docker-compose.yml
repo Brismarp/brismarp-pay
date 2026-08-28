@@ -1,0 +1,80 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-brismar}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-brismar}
+      POSTGRES_DB: ${POSTGRES_DB:-brismar_pay}
+    ports:
+      - "5432:5432"
+    volumes:
+      - brismar_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-brismar}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-brismar}:${POSTGRES_PASSWORD:-brismar}@postgres:5432/${POSTGRES_DB:-brismar_pay}
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+    command: ["npm", "run", "worker:recovery"]
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-brismar}:${POSTGRES_PASSWORD:-brismar}@postgres:5432/${POSTGRES_DB:-brismar_pay}
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: infra/docker/web.Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+
+volumes:
+  brismar_postgres_data:

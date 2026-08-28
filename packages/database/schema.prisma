@@ -1,0 +1,401 @@
+// Brismar Pay — Schema de banco de dados
+// PostgreSQL — valores monetários em Int (centavos) para evitar erro de ponto flutuante
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// IAM / Empresas / Usuários
+// ---------------------------------------------------------------------------
+
+enum CompanyStatus {
+  PENDING_ONBOARDING
+  PENDING_KYB
+  ACTIVE
+  SUSPENDED
+  BLOCKED
+}
+
+model Company {
+  id             String        @id @default(uuid())
+  legalName      String
+  tradeName      String?
+  cnpj           String        @unique
+  businessEmail  String
+  phone          String?
+  status         CompanyStatus @default(PENDING_ONBOARDING)
+  termsAcceptedAt   DateTime?
+  privacyAcceptedAt DateTime?
+
+  address        Address?
+  bankAccounts   BankAccount[]
+  users          CompanyUser[]
+  customers      Customer[]
+  charges        Charge[]
+  transactions   Transaction[]
+  ledgerEntries  LedgerEntry[]
+  apiKeys        ApiKey[]
+  webhooks       Webhook[]
+  kyb            ComplianceRecord?
+  auditLogs      AuditLog[]
+
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([cnpj])
+}
+
+model Address {
+  id         String   @id @default(uuid())
+  company    Company  @relation(fields: [companyId], references: [id])
+  companyId  String   @unique
+  zipCode    String
+  street     String
+  number     String
+  complement String?
+  district   String
+  city       String
+  state      String
+  country    String   @default("BR")
+}
+
+model BankAccount {
+  id         String   @id @default(uuid())
+  company    Company  @relation(fields: [companyId], references: [id])
+  companyId  String
+  bankCode   String
+  agency     String
+  account    String
+  accountType String  // checking | savings
+  holderDocument String
+  createdAt  DateTime @default(now())
+}
+
+enum ComplianceStatus {
+  NOT_STARTED
+  IN_REVIEW
+  APPROVED
+  REJECTED
+}
+
+model ComplianceRecord {
+  id         String            @id @default(uuid())
+  company    Company           @relation(fields: [companyId], references: [id])
+  companyId  String            @unique
+  status     ComplianceStatus  @default(NOT_STARTED)
+  notes      String?
+  reviewedByUserId String?
+  reviewedAt DateTime?
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+}
+
+model User {
+  id                String    @id @default(uuid())
+  name              String
+  email             String    @unique
+  passwordHash      String
+  emailVerifiedAt   DateTime?
+  isPlatformAdmin   Boolean   @default(false) // acesso à área administrativa Brismar Pay
+  twoFactorEnabled  Boolean   @default(false)
+  twoFactorSecret   String?   // armazenado criptografado na camada de aplicação
+  failedLoginAttempts Int     @default(0)
+  lockedUntil       DateTime?
+  lastLoginAt       DateTime?
+
+  companies         CompanyUser[]
+  refreshTokens     RefreshToken[]
+  auditLogs         AuditLog[]
+
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([email])
+}
+
+enum CompanyRole {
+  OWNER
+  ADMIN
+  FINANCE
+  OPERATOR
+  DEVELOPER
+  VIEWER
+}
+
+model CompanyUser {
+  id         String      @id @default(uuid())
+  company    Company     @relation(fields: [companyId], references: [id])
+  companyId  String
+  user       User        @relation(fields: [userId], references: [id])
+  userId     String
+  role       CompanyRole
+  invitedAt  DateTime    @default(now())
+  acceptedAt DateTime?
+  removedAt  DateTime?
+
+  @@unique([companyId, userId])
+}
+
+model RefreshToken {
+  id         String   @id @default(uuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  tokenHash  String   @unique
+  deviceInfo String?
+  ipAddress  String?
+  expiresAt  DateTime
+  revokedAt  DateTime?
+  createdAt  DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Clientes (pagadores do lojista)
+// ---------------------------------------------------------------------------
+
+model Customer {
+  id          String   @id @default(uuid())
+  company     Company  @relation(fields: [companyId], references: [id])
+  companyId   String
+  name        String
+  document    String   // CPF ou CNPJ
+  email       String?
+  phone       String?
+  status      String   @default("active")
+
+  charges     Charge[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([document])
+}
+
+// ---------------------------------------------------------------------------
+// Cobranças / Pagamentos / Transações
+// ---------------------------------------------------------------------------
+
+enum ChargeMethod {
+  PIX
+  CREDIT_CARD
+  DEBIT_CARD
+  BOLETO
+}
+
+enum ChargeStatus {
+  PENDING
+  PROCESSING
+  APPROVED
+  DECLINED
+  FAILED
+  CANCELED
+  REFUNDED
+  PARTIALLY_REFUNDED
+  CHARGEBACK
+  EXPIRED
+}
+
+model Charge {
+  id              String       @id @default(uuid())
+  company         Company      @relation(fields: [companyId], references: [id])
+  companyId       String
+  customer        Customer?    @relation(fields: [customerId], references: [id])
+  customerId      String?
+  method          ChargeMethod
+  status          ChargeStatus @default(PENDING)
+  amountCents     Int
+  currency        String       @default("BRL")
+  installments    Int          @default(1)
+  dueDate         DateTime?
+  expiresAt       DateTime?
+  externalReference String?
+  idempotencyKey  String       @unique
+  metadata        Json?
+
+  providerName    String?      // qual PaymentProvider processou (ex: "mock", futuramente "getnet")
+  providerPaymentId String?    // id retornado pelo provider
+
+  transactions    Transaction[]
+  refunds         Refund[]
+  events          ChargeEvent[]
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([companyId, status])
+  @@index([idempotencyKey])
+}
+
+/// Timeline/histórico de eventos de uma cobrança — nunca sobrescreve, apenas adiciona
+model ChargeEvent {
+  id         String   @id @default(uuid())
+  charge     Charge   @relation(fields: [chargeId], references: [id])
+  chargeId   String
+  fromStatus ChargeStatus?
+  toStatus   ChargeStatus
+  source     String   // "system" | "webhook" | "user:<id>"
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([chargeId])
+}
+
+model Transaction {
+  id              String   @id @default(uuid())
+  company         Company  @relation(fields: [companyId], references: [id])
+  companyId       String
+  charge          Charge?  @relation(fields: [chargeId], references: [id])
+  chargeId        String?
+  type            String   // charge | refund | fee | chargeback
+  amountCents     Int
+  feeCents        Int      @default(0)
+  netAmountCents  Int
+  status          String
+  createdAt       DateTime @default(now())
+
+  @@index([companyId, createdAt])
+}
+
+model Refund {
+  id          String   @id @default(uuid())
+  charge      Charge   @relation(fields: [chargeId], references: [id])
+  chargeId    String
+  amountCents Int
+  reason      String?
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Ledger / Saldo (nunca editável diretamente — regra 11)
+// ---------------------------------------------------------------------------
+
+enum LedgerEntryType {
+  CREDIT
+  DEBIT
+  FEE
+  REFUND
+  CHARGEBACK
+}
+
+model LedgerEntry {
+  id             String          @id @default(uuid())
+  company        Company         @relation(fields: [companyId], references: [id])
+  companyId      String
+  type           LedgerEntryType
+  amountCents    Int
+  balanceAfterCents Int
+  referenceType  String          // "charge" | "refund" | "payout" | "adjustment"
+  referenceId    String?
+  description    String
+  performedBy    String          // "system" ou userId
+  createdAt      DateTime        @default(now())
+
+  @@index([companyId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// API / Desenvolvedor
+// ---------------------------------------------------------------------------
+
+enum ApiKeyEnvironment {
+  SANDBOX
+  PRODUCTION
+}
+
+model ApiKey {
+  id           String            @id @default(uuid())
+  company      Company           @relation(fields: [companyId], references: [id])
+  companyId    String
+  name         String
+  prefix       String            // parte exibida ao usuário, ex: "bpay_live_ab12"
+  keyHash      String            @unique // hash da chave completa — a chave em claro nunca é persistida
+  environment  ApiKeyEnvironment
+  scopes       String[]
+  lastUsedAt   DateTime?
+  revokedAt    DateTime?
+  createdAt    DateTime          @default(now())
+
+  @@index([companyId])
+}
+
+// ---------------------------------------------------------------------------
+// Webhooks
+// ---------------------------------------------------------------------------
+
+model Webhook {
+  id         String   @id @default(uuid())
+  company    Company  @relation(fields: [companyId], references: [id])
+  companyId  String
+  url        String
+  secret     String   // usado para assinar payloads enviados ao cliente
+  events     String[]
+  active     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  deliveries WebhookDelivery[]
+}
+
+model WebhookDelivery {
+  id           String   @id @default(uuid())
+  webhook      Webhook  @relation(fields: [webhookId], references: [id])
+  webhookId    String
+  eventType    String
+  payload      Json
+  statusCode   Int?
+  attempt      Int      @default(1)
+  succeeded    Boolean  @default(false)
+  nextRetryAt  DateTime?
+  createdAt    DateTime @default(now())
+}
+
+/// Webhooks recebidos de provedores externos (ex: futura Getnet) — auditoria bruta
+model IncomingWebhookEvent {
+  id           String   @id @default(uuid())
+  provider     String
+  eventType    String
+  payload      Json
+  signatureValid Boolean
+  processed    Boolean  @default(false)
+  processedAt  DateTime?
+  idempotencyKey String @unique
+  receivedAt   DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Auditoria e Notificações
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorUser  User?    @relation(fields: [actorUserId], references: [id])
+  actorUserId String?
+  company    Company? @relation(fields: [companyId], references: [id])
+  companyId  String?
+  action     String
+  entity     String
+  entityId   String?
+  ipAddress  String?
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([companyId, createdAt])
+  @@index([actorUserId])
+}
+
+model Notification {
+  id         String   @id @default(uuid())
+  companyId  String?
+  userId     String?
+  channel    String   // email | sms | push | webhook
+  template   String
+  status     String   @default("pending")
+  sentAt     DateTime?
+  createdAt  DateTime @default(now())
+}

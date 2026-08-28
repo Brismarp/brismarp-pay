@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+
+# Build and framework artifacts
+dist/
+.next/
+coverage/
+
+# Environment files and secrets
+.env
+.env.*
+!.env.example
+
+# Logs and local tooling
+*.log
+npm-debug.log*
+.DS_Store
+.eslintcache
