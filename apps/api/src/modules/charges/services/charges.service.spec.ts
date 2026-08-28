@@ -99,6 +99,8 @@ describe('ChargesService', () => {
     service = moduleRef.get(ChargesService);
   });
 
+  const actor = { userId: 'user-1', source: 'user:user-1' };
+
   const validDto = {
     method: ChargeMethodDto.CREDIT_CARD,
     amountCents: 5_000,
@@ -109,7 +111,7 @@ describe('ChargesService', () => {
   it('rejeita cobrança para cliente que não pertence à empresa autenticada', async () => {
     prisma.customer.findFirst.mockResolvedValue(null);
 
-    await expect(service.create('company-1', 'user-1', validDto)).rejects.toThrow(BadRequestException);
+    await expect(service.create('company-1', actor, validDto)).rejects.toThrow(BadRequestException);
     expect(paymentProvider.createPayment).not.toHaveBeenCalled();
   });
 
@@ -117,7 +119,7 @@ describe('ChargesService', () => {
     prisma.customer.findFirst.mockResolvedValue({ id: 'customer-1', name: 'Ana', document: '123' });
     prisma.charge.findUnique.mockResolvedValue({ id: 'charge-existing', companyId: 'company-1', idempotencyKey: 'idem-key-1' });
 
-    const result = await service.create('company-1', 'user-1', validDto);
+    const result = await service.create('company-1', actor, validDto);
 
     expect(result.id).toBe('charge-existing');
     expect(paymentProvider.createPayment).not.toHaveBeenCalled();
@@ -128,7 +130,7 @@ describe('ChargesService', () => {
     prisma.customer.findFirst.mockResolvedValue({ id: 'customer-1', name: 'Ana', document: '123' });
     prisma.charge.findUnique.mockResolvedValue({ id: 'charge-existing', companyId: 'company-OUTRA', idempotencyKey: 'idem-key-1' });
 
-    await expect(service.create('company-1', 'user-1', validDto)).rejects.toThrow(ConflictException);
+    await expect(service.create('company-1', actor, validDto)).rejects.toThrow(ConflictException);
   });
 
   it('cobrança aprovada gera Transaction e lançamento de ledger com taxa deduzida', async () => {
@@ -139,7 +141,7 @@ describe('ChargesService', () => {
     prisma.__tx.charge.update.mockResolvedValue({ id: 'charge-new', status: 'APPROVED', companyId: 'company-1', amountCents: 5_000, providerName: 'mock', providerPaymentId: 'mock_123', createdAt: new Date(), updatedAt: new Date() });
     prisma.charge.findFirst.mockResolvedValue({ id: 'charge-new', companyId: 'company-1', status: 'APPROVED' });
 
-    await service.create('company-1', 'user-1', validDto);
+    await service.create('company-1', actor, validDto);
 
     expect(prisma.__tx.transaction.create).toHaveBeenCalledTimes(1);
     const txArgs = prisma.__tx.transaction.create.mock.calls[0][0].data;
@@ -158,7 +160,7 @@ describe('ChargesService', () => {
     prisma.__tx.charge.update.mockResolvedValue({ id: 'charge-pix', status: 'PENDING', companyId: 'company-1', amountCents: 5_000, providerName: 'mock', providerPaymentId: 'mock_pix_1', createdAt: new Date(), updatedAt: new Date() });
     prisma.charge.findFirst.mockResolvedValue({ id: 'charge-pix', companyId: 'company-1', status: 'PENDING' });
 
-    await service.create('company-1', 'user-1', { ...validDto, method: ChargeMethodDto.PIX });
+    await service.create('company-1', actor, { ...validDto, method: ChargeMethodDto.PIX });
 
     expect(prisma.__tx.charge.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ expiresAt: expect.any(Date) }) }));
     expect(prisma.__tx.transaction.create).not.toHaveBeenCalled();
@@ -207,7 +209,7 @@ describe('ChargesService', () => {
       prisma.charge.findFirst.mockResolvedValue({ id: 'charge-1', status: 'PENDING', providerPaymentId: 'mock_1' });
       prisma.__tx.charge.update.mockResolvedValue({ id: 'charge-1', status: 'CANCELED', companyId: 'company-1', amountCents: 5_000 });
 
-      await service.cancel('company-1', 'charge-1', 'user-1');
+      await service.cancel('company-1', 'charge-1', actor);
 
       expect(paymentProvider.cancelPayment).toHaveBeenCalledWith('mock_1');
       expect(prisma.__tx.chargeEvent.create).toHaveBeenCalled();
@@ -216,7 +218,7 @@ describe('ChargesService', () => {
     it('rejeita cancelar cobrança já aprovada (deve usar estorno, não cancelamento)', async () => {
       prisma.charge.findFirst.mockResolvedValue({ id: 'charge-1', status: 'APPROVED' });
 
-      await expect(service.cancel('company-1', 'charge-1', 'user-1')).rejects.toThrow(BadRequestException);
+      await expect(service.cancel('company-1', 'charge-1', actor)).rejects.toThrow(BadRequestException);
       expect(paymentProvider.cancelPayment).not.toHaveBeenCalled();
     });
   });
@@ -238,7 +240,7 @@ describe('ChargesService', () => {
       prisma.__tx.refund.create.mockResolvedValue({ id: 'refund-1' });
       prisma.__tx.charge.update.mockResolvedValue({ ...approvedCharge, status: 'REFUNDED' });
 
-      await service.refund('company-1', 'charge-1', 'user-1', 'cliente pediu');
+      await service.refund('company-1', 'charge-1', actor, 'cliente pediu');
 
       expect(paymentProvider.refundPayment).toHaveBeenCalledWith({
         providerPaymentId: 'mock_123',
@@ -260,14 +262,14 @@ describe('ChargesService', () => {
     it('rejeita estorno de cobrança pendente', async () => {
       prisma.charge.findFirst.mockResolvedValue({ ...approvedCharge, status: 'PENDING' });
 
-      await expect(service.refund('company-1', 'charge-1', 'user-1')).rejects.toThrow(BadRequestException);
+      await expect(service.refund('company-1', 'charge-1', actor)).rejects.toThrow(BadRequestException);
       expect(paymentProvider.refundPayment).not.toHaveBeenCalled();
     });
 
     it('rejeita segundo estorno da mesma cobrança', async () => {
       prisma.charge.findFirst.mockResolvedValue({ ...approvedCharge, status: 'REFUNDED' });
 
-      await expect(service.refund('company-1', 'charge-1', 'user-1')).rejects.toThrow(ConflictException);
+      await expect(service.refund('company-1', 'charge-1', actor)).rejects.toThrow(ConflictException);
       expect(paymentProvider.refundPayment).not.toHaveBeenCalled();
     });
   });

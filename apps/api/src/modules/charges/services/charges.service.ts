@@ -15,6 +15,11 @@ const DEFAULT_PAYMENT_STATE_TTL_SECONDS = 60 * 60 * 24;
 const DEFAULT_PAYMENT_EXPIRATION_MINUTES = 30;
 const DEFAULT_RECONCILIATION_BATCH_SIZE = 100;
 
+export type ChargeActor = {
+  userId: string | null;
+  source: string;
+};
+
 @Injectable()
 export class ChargesService {
   constructor(
@@ -25,7 +30,7 @@ export class ChargesService {
     @Inject(PAYMENT_PROVIDER) private readonly paymentProvider: PaymentProvider,
   ) {}
 
-  async create(companyId: string, actorUserId: string, dto: CreateChargeDto) {
+  async create(companyId: string, actor: ChargeActor, dto: CreateChargeDto) {
     const customer = await this.prisma.customer.findFirst({ where: { id: dto.customerId, companyId } });
     if (!customer) throw new BadRequestException('Cliente informado não pertence a esta empresa.');
 
@@ -71,7 +76,7 @@ export class ChargesService {
             chargeId: created.id,
             fromStatus: null,
             toStatus: 'PROCESSING',
-            source: `user:${actorUserId}`,
+            source: actor.source,
             metadata: { phase: 'intent-created' } as any,
           },
         });
@@ -107,7 +112,7 @@ export class ChargesService {
           `provider:${this.paymentProvider.name}`,
           providerResult.raw,
           providerResult.providerPaymentId,
-          actorUserId,
+          actor.source,
         );
         if (['PENDING', 'PROCESSING'].includes(updated.status)) await this.recoveryQueue.schedule(updated.id);
       } catch (error) {
@@ -117,13 +122,13 @@ export class ChargesService {
           `provider:${this.paymentProvider.name}:error`,
           { message: error instanceof Error ? error.message : 'unknown' },
           undefined,
-          actorUserId,
+          actor.source,
         );
       }
 
       await this.prisma.auditLog.create({
         data: {
-          actorUserId,
+          actorUserId: actor.userId,
           companyId,
           action: 'charge.create',
           entity: 'Charge',
@@ -146,21 +151,21 @@ export class ChargesService {
     return state;
   }
 
-  async simulatePixConfirmation(companyId: string, chargeId: string, actorUserId: string) {
+  async simulatePixConfirmation(companyId: string, chargeId: string, actor: ChargeActor) {
     const charge = await this.getOwned(companyId, chargeId);
     if (charge.method !== 'PIX' && charge.method !== 'BOLETO') throw new BadRequestException('Simulação disponível apenas para PIX/Boleto.');
     if (!['PENDING', 'PROCESSING'].includes(charge.status)) throw new BadRequestException(`Cobrança não está pendente (status atual: ${charge.status}).`);
-    return this.transition(chargeId, 'APPROVED', 'sandbox-simulation', { simulated: true }, undefined, actorUserId);
+    return this.transition(chargeId, 'APPROVED', 'sandbox-simulation', { simulated: true }, undefined, actor.source);
   }
 
-  async cancel(companyId: string, chargeId: string, actorUserId: string) {
+  async cancel(companyId: string, chargeId: string, actor: ChargeActor) {
     const charge = await this.getOwned(companyId, chargeId);
     if (!['PENDING', 'PROCESSING'].includes(charge.status)) throw new BadRequestException(`Cobrança com status "${charge.status}" não pode ser cancelada.`);
     if (charge.providerPaymentId) await this.paymentProvider.cancelPayment(charge.providerPaymentId);
-    return this.transition(chargeId, 'CANCELED', `user:${actorUserId}`, { cancelled: true }, undefined, actorUserId);
+    return this.transition(chargeId, 'CANCELED', actor.source, { cancelled: true }, undefined, actor.source);
   }
 
-  async refund(companyId: string, chargeId: string, actorUserId: string, reason?: string) {
+  async refund(companyId: string, chargeId: string, actor: ChargeActor, reason?: string) {
     const charge = await this.getOwned(companyId, chargeId);
     if (charge.status === 'REFUNDED') {
       throw new ConflictException('Cobrança já estornada.');
@@ -226,7 +231,7 @@ export class ChargesService {
           referenceType: 'refund',
           referenceId: refund.id,
           description: 'Estorno de cobrança aprovada (líquido)',
-          performedBy: `user:${actorUserId}`,
+          performedBy: actor.source,
         });
       }
 
@@ -239,7 +244,7 @@ export class ChargesService {
           chargeId,
           fromStatus: current.status,
           toStatus: 'REFUNDED',
-          source: `user:${actorUserId}`,
+          source: actor.source,
           metadata: { refundId: refund.id, reason: reason ?? null } as any,
         },
       });
@@ -249,7 +254,7 @@ export class ChargesService {
     await this.redis.setJson(`payment:${updated.id}`, this.stateFromCharge(updated), this.paymentStateTtlSeconds());
     await this.prisma.auditLog.create({
       data: {
-        actorUserId,
+        actorUserId: actor.userId,
         companyId,
         action: 'charge.refund',
         entity: 'Charge',
@@ -385,7 +390,7 @@ export class ChargesService {
     source: string,
     metadata: any,
     providerPaymentId?: string,
-    actorUserId = 'system',
+    actorSource = 'system',
   ) {
     const updated = await this.prisma.$transaction(async tx => {
       const current = await tx.charge.findUniqueOrThrow({ where: { id: chargeId } });
@@ -396,7 +401,7 @@ export class ChargesService {
       });
       await tx.chargeEvent.create({ data: { chargeId, fromStatus: current.status, toStatus: status, source, metadata: metadata as any } });
       if (status === 'APPROVED' && current.status !== 'APPROVED') {
-        await this.settleApprovedCharge(tx, next.companyId, next.id, next.amountCents, actorUserId);
+        await this.settleApprovedCharge(tx, next.companyId, next.id, next.amountCents, actorSource);
       }
       return next;
     }, { isolationLevel: 'Serializable' });
@@ -419,7 +424,7 @@ export class ChargesService {
     };
   }
 
-  private async settleApprovedCharge(tx: any, companyId: string, chargeId: string, amountCents: number, actorUserId: string) {
+  private async settleApprovedCharge(tx: any, companyId: string, chargeId: string, amountCents: number, actorSource: string) {
     const feeCents = Math.round((amountCents * PLACEHOLDER_FEE_BPS) / 10000);
     const netAmountCents = amountCents - feeCents;
     await tx.transaction.create({ data: { companyId, chargeId, type: 'charge', amountCents, feeCents, netAmountCents, status: 'APPROVED' } });
@@ -430,7 +435,7 @@ export class ChargesService {
       referenceType: 'charge',
       referenceId: chargeId,
       description: 'Cobrança aprovada (líquido de taxa)',
-      performedBy: `user:${actorUserId}`,
+      performedBy: actorSource,
     });
     if (feeCents > 0) {
       await this.ledgerService.append(tx, {

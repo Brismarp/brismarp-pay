@@ -12,7 +12,12 @@ export class ApiKeyAuthGuard implements CanActivate {
     if (!rawKey) throw new UnauthorizedException('API Key ausente.');
     const key = await this.apiKeys.authenticate(rawKey);
     if (!key) throw new UnauthorizedException('API Key inválida ou revogada.');
-    request.apiKey = { id: key.id, environment: key.environment, scopes: key.scopes };
+    request.apiKey = {
+      id: key.id,
+      companyId: key.companyId,
+      environment: key.environment,
+      scopes: key.scopes,
+    };
     request.companyContext = { companyId: key.companyId, role: 'API_KEY' };
     return true;
   }

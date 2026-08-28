@@ -2,13 +2,15 @@ import { CanActivate, ExecutionContext, Injectable, ForbiddenException } from '@
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { COMPANY_ROLES_KEY } from './company-roles.decorator';
+import { REQUIRE_SCOPES_KEY } from './require-scopes.decorator';
 
 /**
- * Garante duas coisas em toda rota protegida por este guard:
- * 1. O usuário autenticado pertence à empresa referenciada na rota (isolamento de tenant).
- * 2. O papel do usuário na empresa está na lista de papéis permitidos para a ação.
+ * Garante isolamento de tenant e autorização:
+ * - JWT: o usuário pertence à empresa da rota e o papel está em @CompanyRoles.
+ * - API Key: a chave pertence à empresa da rota e cobre @RequireScopes (fail closed).
  *
- * Nunca confia em company_id vindo do body/query — sempre cruza com o vínculo real no banco.
+ * Nunca confia em company_id vindo do body/query — sempre cruza com o vínculo real
+ * (membership) ou com o companyId persistido na API Key.
  */
 @Injectable()
 export class CompanyRolesGuard implements CanActivate {
@@ -18,15 +20,20 @@ export class CompanyRolesGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest();
+    const companyId = request.params.companyId ?? request.headers['x-company-id'];
+
+    if (request.apiKey) {
+      return this.authorizeApiKey(context, request, companyId);
+    }
+
     const requiredRoles = this.reflector.getAllAndOverride<string[]>(COMPANY_ROLES_KEY, [
       context.getHandler(),
       context.getClass(),
     ]);
     if (!requiredRoles || requiredRoles.length === 0) return true;
 
-    const request = context.switchToHttp().getRequest();
     const user = request.user;
-    const companyId = request.params.companyId ?? request.headers['x-company-id'];
 
     if (!user || !companyId) {
       throw new ForbiddenException('Contexto de empresa ausente.');
@@ -40,8 +47,31 @@ export class CompanyRolesGuard implements CanActivate {
       throw new ForbiddenException('Você não tem permissão para executar esta ação nesta empresa.');
     }
 
-    // Disponibiliza o contexto de empresa/papel para os controllers/services subsequentes.
     request.companyContext = { companyId, role: membership.role };
+    return true;
+  }
+
+  private authorizeApiKey(context: ExecutionContext, request: any, companyId: string | undefined): boolean {
+    const keyCompanyId = request.apiKey.companyId ?? request.companyContext?.companyId;
+    if (!companyId || !keyCompanyId || companyId !== keyCompanyId) {
+      throw new ForbiddenException('A API Key não pertence a esta empresa.');
+    }
+
+    const requiredScopes = this.reflector.getAllAndOverride<string[]>(REQUIRE_SCOPES_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (!requiredScopes || requiredScopes.length === 0) {
+      throw new ForbiddenException('Esta rota não aceita autenticação por API Key.');
+    }
+
+    const granted: string[] = request.apiKey.scopes ?? [];
+    const missing = requiredScopes.filter((scope) => !granted.includes(scope));
+    if (missing.length) {
+      throw new ForbiddenException('A API Key não possui os escopos necessários.');
+    }
+
+    request.companyContext = { companyId, role: 'API_KEY' };
     return true;
   }
 }
