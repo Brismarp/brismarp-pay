@@ -17,7 +17,7 @@ export default defineConfig({
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: [
     {
-      command: process.env.CI ? 'npm run start:prod' : 'npm run start:dev',
+      command: process.env.CI ? 'npm run start:prod' : 'npm run start',
       cwd: apiDir,
       url: 'http://localhost:3001/v1/health',
       reuseExistingServer: !process.env.CI,
@@ -36,6 +36,7 @@ export default defineConfig({
       timeout: 120_000,
       env: {
         ...process.env,
+        PORT: '3000',
         NEXT_PUBLIC_API_URL: apiUrl,
       },
     },
