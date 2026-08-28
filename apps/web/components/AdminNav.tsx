@@ -44,6 +44,7 @@ export function AdminNav() {
         </Link>
         <button
           type="button"
+          data-testid="admin-nav-logout"
           onClick={handleLogout}
           className="text-sm text-brand-200 hover:text-white"
         >

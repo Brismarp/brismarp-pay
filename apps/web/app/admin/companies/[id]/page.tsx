@@ -98,6 +98,8 @@ export default function AdminCompanyDetailPage() {
               Ativar
             </button>
             <button
+              type="button"
+              data-testid="admin-status-suspend"
               disabled={actionLoading || company.status === 'SUSPENDED'}
               onClick={() => handleStatusChange('SUSPENDED')}
               className="text-xs px-3 py-1.5 rounded-full border border-amber-300 text-amber-800 disabled:opacity-40"
@@ -130,6 +132,8 @@ export default function AdminCompanyDetailPage() {
               />
               <div className="flex gap-2">
                 <button
+                  type="button"
+                  data-testid="admin-kyb-approve"
                   disabled={actionLoading}
                   onClick={() => handleKybDecision('APPROVED')}
                   className="text-xs px-3 py-1.5 rounded-full bg-brand-900 text-white disabled:opacity-40"
