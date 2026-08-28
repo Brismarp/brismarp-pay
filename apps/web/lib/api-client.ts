@@ -195,6 +195,34 @@ export const apiClient = {
       accessToken,
     ),
 
+  listApiKeys: (companyId: string, accessToken: string) =>
+    request<ApiKeyListItem[]>(`/companies/${companyId}/api-keys`, {}, accessToken),
+
+  createApiKey: (
+    companyId: string,
+    data: { name: string; environment: ApiKeyEnvironment; scopes: string[] },
+    accessToken: string,
+  ) =>
+    request<ApiKeySecretResponse>(
+      `/companies/${companyId}/api-keys`,
+      { method: 'POST', body: JSON.stringify(data) },
+      accessToken,
+    ),
+
+  revokeApiKey: (companyId: string, apiKeyId: string, accessToken: string) =>
+    request<{ id: string; prefix?: string; revokedAt: string; alreadyRevoked?: boolean }>(
+      `/companies/${companyId}/api-keys/${apiKeyId}`,
+      { method: 'DELETE' },
+      accessToken,
+    ),
+
+  rotateApiKey: (companyId: string, apiKeyId: string, accessToken: string) =>
+    request<ApiKeySecretResponse>(
+      `/companies/${companyId}/api-keys/${apiKeyId}/rotate`,
+      { method: 'POST' },
+      accessToken,
+    ),
+
   // --- Admin (área administrativa da plataforma) ---
 
   adminListCompanies: (
@@ -384,4 +412,37 @@ export interface CreateCompanyPayload {
   };
   termsAccepted: boolean;
   privacyAccepted: boolean;
+}
+
+export const API_KEY_SCOPES = [
+  'charges:read',
+  'charges:write',
+  'customers:read',
+  'customers:write',
+  'ledger:read',
+  'webhooks:manage',
+] as const;
+
+export type ApiKeyEnvironment = 'SANDBOX' | 'PRODUCTION';
+
+export interface ApiKeyListItem {
+  id: string;
+  name: string;
+  prefix: string;
+  environment: ApiKeyEnvironment;
+  scopes: string[];
+  lastUsedAt: string | null;
+  revokedAt: string | null;
+  createdAt: string;
+}
+
+export interface ApiKeySecretResponse {
+  id: string;
+  name: string;
+  prefix: string;
+  environment: ApiKeyEnvironment;
+  scopes: string[];
+  createdAt: string;
+  key: string;
+  warning: string;
 }

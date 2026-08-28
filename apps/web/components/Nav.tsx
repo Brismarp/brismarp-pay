@@ -8,6 +8,7 @@ const LINKS = [
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/customers', label: 'Clientes' },
   { href: '/charges', label: 'Cobranças' },
+  { href: '/api-keys', label: 'API Keys' },
 ];
 
 export function Nav() {
