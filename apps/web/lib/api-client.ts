@@ -139,6 +139,18 @@ export const apiClient = {
       accessToken,
     ),
 
+  updateCustomer: (
+    companyId: string,
+    customerId: string,
+    data: { name?: string; email?: string; phone?: string },
+    accessToken: string,
+  ) =>
+    request<Customer>(
+      `/companies/${companyId}/customers/${customerId}`,
+      { method: 'PATCH', body: JSON.stringify(data) },
+      accessToken,
+    ),
+
   // --- Cobranças ---
 
   listCharges: (
