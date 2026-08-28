@@ -5,6 +5,7 @@ import { CompanyRoles } from '../../auth/guards/company-roles.decorator';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import { ChargesService } from '../services/charges.service';
 import { CreateChargeDto } from '../dtos/create-charge.dto';
+import { RefundChargeDto } from '../dtos/refund-charge.dto';
 import { ChargeStatus } from '@prisma/client';
 
 @Controller('companies/:companyId/charges')
@@ -65,6 +66,17 @@ export class ChargesController {
     @CurrentUser() user: { id: string },
   ) {
     return this.chargesService.cancel(companyId, chargeId, user.id);
+  }
+
+  @Patch(':chargeId/refund')
+  @CompanyRoles('OWNER', 'ADMIN', 'FINANCE')
+  refund(
+    @Param('companyId') companyId: string,
+    @Param('chargeId') chargeId: string,
+    @CurrentUser() user: { id: string },
+    @Body() dto: RefundChargeDto,
+  ) {
+    return this.chargesService.refund(companyId, chargeId, user.id, dto.reason);
   }
 
   /**

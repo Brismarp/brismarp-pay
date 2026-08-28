@@ -160,6 +160,106 @@ export class ChargesService {
     return this.transition(chargeId, 'CANCELED', `user:${actorUserId}`, { cancelled: true }, undefined, actorUserId);
   }
 
+  async refund(companyId: string, chargeId: string, actorUserId: string, reason?: string) {
+    const charge = await this.getOwned(companyId, chargeId);
+    if (charge.status === 'REFUNDED') {
+      throw new ConflictException('Cobrança já estornada.');
+    }
+    if (charge.status !== 'APPROVED') {
+      throw new BadRequestException(`Somente cobranças aprovadas podem ser estornadas (status atual: ${charge.status}).`);
+    }
+    if (!charge.providerPaymentId) {
+      throw new BadRequestException('Cobrança sem identificador do provider não pode ser estornada.');
+    }
+
+    const alreadyRefunded = await this.prisma.refund.findFirst({
+      where: { chargeId, status: 'succeeded' },
+    });
+    if (alreadyRefunded) throw new ConflictException('Cobrança já estornada.');
+
+    await this.paymentProvider.refundPayment({
+      providerPaymentId: charge.providerPaymentId,
+      amountCents: charge.amountCents,
+      reason,
+    });
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const current = await tx.charge.findUniqueOrThrow({ where: { id: chargeId } });
+      if (current.status !== 'APPROVED') {
+        throw new ConflictException('Cobrança já estornada.');
+      }
+
+      const settlement = await tx.transaction.findFirst({
+        where: { chargeId, type: 'charge' },
+        orderBy: { createdAt: 'desc' },
+      });
+      const netAmountCents =
+        settlement?.netAmountCents ??
+        current.amountCents - Math.round((current.amountCents * PLACEHOLDER_FEE_BPS) / 10000);
+
+      const refund = await tx.refund.create({
+        data: {
+          chargeId,
+          amountCents: current.amountCents,
+          reason: reason?.trim() || null,
+          status: 'succeeded',
+        },
+      });
+
+      await tx.transaction.create({
+        data: {
+          companyId: current.companyId,
+          chargeId,
+          type: 'refund',
+          amountCents: current.amountCents,
+          feeCents: 0,
+          netAmountCents,
+          status: 'REFUNDED',
+        },
+      });
+
+      if (netAmountCents > 0) {
+        await this.ledgerService.append(tx, {
+          companyId: current.companyId,
+          type: 'REFUND',
+          amountCents: netAmountCents,
+          referenceType: 'refund',
+          referenceId: refund.id,
+          description: 'Estorno de cobrança aprovada (líquido)',
+          performedBy: `user:${actorUserId}`,
+        });
+      }
+
+      const next = await tx.charge.update({
+        where: { id: chargeId },
+        data: { status: 'REFUNDED' },
+      });
+      await tx.chargeEvent.create({
+        data: {
+          chargeId,
+          fromStatus: current.status,
+          toStatus: 'REFUNDED',
+          source: `user:${actorUserId}`,
+          metadata: { refundId: refund.id, reason: reason ?? null } as any,
+        },
+      });
+      return next;
+    }, { isolationLevel: 'Serializable' });
+
+    await this.redis.setJson(`payment:${updated.id}`, this.stateFromCharge(updated), this.paymentStateTtlSeconds());
+    await this.prisma.auditLog.create({
+      data: {
+        actorUserId,
+        companyId,
+        action: 'charge.refund',
+        entity: 'Charge',
+        entityId: charge.id,
+        metadata: { reason: reason ?? null } as any,
+      },
+    });
+    return updated;
+  }
+
   /** Processa um job individual da fila de recuperação. Erros são relançados para o retry do BullMQ. */
   async recoverPendingCharge(chargeId: string) {
     const charge = await this.prisma.charge.findUnique({ where: { id: chargeId } });
