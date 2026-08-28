@@ -48,7 +48,7 @@ A operação assíncrona está documentada em `docs/OPERACAO_ASYNC.md`, e o chec
 git clone <repositorio>
 cd brismar-pay
 make setup    # .env, Postgres, Redis, deps, schema
-make dev      # API + web
+make dev      # API + web + worker
 ```
 
 Acesse `http://localhost:3000` (redireciona para login, onboarding ou dashboard). `make help` lista os outros alvos (`api`, `web`, `worker`, `test`, `docker`).

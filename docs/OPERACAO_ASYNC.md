@@ -10,10 +10,12 @@ Com PostgreSQL e Redis disponíveis, copie `.env.example` para `.env`, mantenha 
 
 ```bash
 make setup
-make dev    # API (3001), web (3000) e worker de recuperação
+make api      # NestJS em :3001
+make web      # Next.js em :3000
+make worker   # recuperação/conciliação BullMQ
 ```
 
-Ou, em processos separados: `make api`, `make web` e `make worker`.
+`make dev` sobe API, web e worker juntos.
 
 Com Docker Compose, a API e o worker são processos distintos:
 

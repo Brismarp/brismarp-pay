@@ -7,7 +7,7 @@ WEB := apps/web
 
 help: ## Show available targets
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make <target>\n\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  %-12s %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
-	@printf '\n  Web  http://localhost:3000/register\n  API  http://localhost:3001/v1/health\n\n'
+	@printf '\n  Web  http://localhost:3000\n  API  http://localhost:3001/v1/health\n\n'
 
 setup: env infra install prisma ## First-time: .env, Postgres, Redis, deps, schema
 
@@ -42,10 +42,11 @@ web: env ## Start the Next.js app
 worker: env ## Start the payment-recovery worker
 	npm run worker:recovery --prefix $(API)
 
-dev: env ## Start API and web together
+dev: env ## Start API, web, and recovery worker
 	trap 'kill 0' INT TERM; \
 	$(MAKE) api & \
 	$(MAKE) web & \
+	$(MAKE) worker & \
 	wait
 
 docker: ## Build and run the full Docker Compose stack
