@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
-.PHONY: help setup env infra install prisma api web worker dev docker down test test-e2e
+.PHONY: help setup env infra install prisma api web worker dev docker down test test-e2e test-ui
 
 API := apps/api
 WEB := apps/web
@@ -64,3 +64,8 @@ test-e2e: env ## Run API HTTP e2e (needs Postgres + Redis)
 	TEST_REDIS_URL="$${TEST_REDIS_URL:-$$REDIS_URL}" \
 	PAYMENT_PROVIDER="$${PAYMENT_PROVIDER:-mock}" \
 	npm run test:e2e --prefix $(API) -- --runInBand --forceExit
+
+test-ui: env ## Run Playwright against the merchant console (needs Postgres + Redis)
+	set -a && source .env && set +a && \
+	PAYMENT_PROVIDER="$${PAYMENT_PROVIDER:-mock}" \
+	npm run test:e2e --prefix $(WEB)

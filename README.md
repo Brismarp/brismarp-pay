@@ -52,7 +52,7 @@ make setup    # .env, Postgres, Redis, deps, schema
 make dev      # API + web + worker
 ```
 
-Acesse `http://localhost:3000` (redireciona para login, onboarding ou dashboard). `make help` lista os outros alvos (`api`, `web`, `worker`, `test`, `docker`).
+Acesse `http://localhost:3000` (redireciona para login, onboarding ou dashboard). `make help` lista os outros alvos (`api`, `web`, `worker`, `test`, `test-e2e`, `test-ui`, `docker`).
 
 Dependências ficam em `apps/api` e `apps/web` — não há `package.json` na raiz.
 
@@ -87,33 +87,37 @@ Ver `.env.example` — todas as variáveis necessárias estão documentadas ali,
 
 ## Como executar os testes
 
-```bash
-cd apps/api
-npm install
-npx prisma generate --schema=../../packages/database/schema.prisma
-JWT_SECRET=qualquer-valor npm test              # unitários — rodam sem Postgres/Redis
-JWT_SECRET=qualquer-valor npm run test:cov      # unitários com cobertura
-```
+Três camadas. `make test` continua só nos unitários da API.
 
-Testes E2E (fluxos críticos completos: cadastro → login → onboarding → cliente →
-cobrança → idempotência → status via Redis → isolamento de tenant) exigem Postgres e Redis de teste reais:
+### 1. Unitários (Prisma e Redis mockados)
+
+Não precisam de Postgres nem Redis.
 
 ```bash
-docker run -d -p 5433:5432 -e POSTGRES_PASSWORD=test -e POSTGRES_DB=brismar_pay_test postgres:16-alpine
-docker run -d -p 6380:6379 redis:7-alpine
-cd apps/api
-TEST_DATABASE_URL=postgresql://postgres:test@localhost:5433/brismar_pay_test \
-  TEST_REDIS_URL=redis://localhost:6380 \
-  JWT_SECRET=test-secret \
-  npx prisma migrate deploy --schema=../../packages/database/schema.prisma
-TEST_DATABASE_URL=postgresql://postgres:test@localhost:5433/brismar_pay_test \
-  TEST_REDIS_URL=redis://localhost:6380 \
-  JWT_SECRET=test-secret \
-  npm run test:e2e -- --runInBand
+make test
+# equivalente: JWT_SECRET=qualquer-valor npm test --prefix apps/api
 ```
 
-Sem `TEST_DATABASE_URL` e `TEST_REDIS_URL` definidas, a suíte E2E é pulada automaticamente (não falha) —
-comportamento intencional para não quebrar ambientes sem a infraestrutura descartável.
+### 2. HTTP e2e / integração (Nest + Postgres + Redis)
+
+Supertest contra a API real. Exigem `TEST_DATABASE_URL` e `TEST_REDIS_URL` (sem elas a suíte é pulada, não falha). O alvo `test-e2e` reutiliza `DATABASE_URL` / `REDIS_URL` do `.env` se `TEST_*` não existirem.
+
+```bash
+make infra
+make prisma
+make test-e2e
+```
+
+### 3. Playwright (console do lojista, Chromium)
+
+Sobe API + Next (ou reutiliza `make dev` se já estiverem no ar). Mesmo Postgres/Redis da camada 2. Sem Firefox/WebKit no CI.
+
+```bash
+cd apps/web && npx playwright install chromium
+make test-ui
+```
+
+`PAYMENT_PROVIDER` permanece `mock`. Não há Playwright de `/admin` nem chamadas Getnet.
 
 **Executado nesta entrega, de verdade** (não apenas escrito): `npm install`, `prisma
 generate`, os 53 testes unitários (8 suítes, todas verdes), a suíte E2E confirmando
@@ -128,7 +132,9 @@ que o skip funciona sem Postgres/Redis, e o build de produção (`nest build`) s
 - **`company-roles.guard.spec.ts`**: isolamento de tenant (sem vínculo → bloqueado, papel fora da lista → bloqueado, papel válido → contexto de empresa anexado ao request)
 - **`redis.service.spec.ts`**: JSON com TTL, `SET NX`, release seguro do lock e encerramento da conexão.
 - **`getnet-auth.service.spec.ts`**: OAuth client-credentials, Basic Auth, cache e renovação antecipada do token.
-- **`critical-flows.e2e-spec.ts`**: fluxos ponta a ponta contra Postgres + Redis reais — cadastro, login, onboarding, cliente, cobrança aprovada, idempotência, consulta de status via cache Redis, saldo, timeline, cancelamento bloqueado e isolamento de tenant; é pulado sem as duas URLs de teste.
+- **`critical-flows.e2e-spec.ts`**: fluxos ponta a ponta contra Postgres + Redis reais — cadastro, login, onboarding, cliente (criação e edição), cobrança aprovada, estorno, PIX com simulação de confirmação, refresh/logout, dashboard, idempotência, Redis, cancelamento bloqueado e isolamento de tenant; é pulado sem as duas URLs de teste.
+- **`admin-flows.e2e-spec.ts`**: lojista comum recebe 403 em `/admin`; usuário promovido via Prisma aprova KYB e a empresa fica `ACTIVE`.
+- **`apps/web/e2e/merchant-console.spec.ts`**: Playwright (Chromium) no console do lojista — onboarding, cliente, cobrança de cartão, estorno, API Key sandbox e logout.
 
 ## Segurança implementada nesta fase
 
