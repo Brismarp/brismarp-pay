@@ -108,7 +108,7 @@ make prisma
 make test-e2e
 ```
 
-### 3. Playwright (console do lojista, Chromium)
+### 3. Playwright (console do lojista e painel `/admin`, Chromium)
 
 Sobe API + Next (ou reutiliza `make dev` se já estiverem no ar). Mesmo Postgres/Redis da camada 2. Sem Firefox/WebKit no CI.
 
@@ -117,7 +117,7 @@ cd apps/web && npx playwright install chromium
 make test-ui
 ```
 
-`PAYMENT_PROVIDER` permanece `mock`. Não há Playwright de `/admin` nem chamadas Getnet.
+`PAYMENT_PROVIDER` permanece `mock`. O walk de `/admin` promove o usuário via Prisma (`isPlatformAdmin`); não existe auto-promote na API. Sem chamadas Getnet.
 
 **Executado nesta entrega, de verdade** (não apenas escrito): `npm install`, `prisma
 generate`, os 53 testes unitários (8 suítes, todas verdes), a suíte E2E confirmando
@@ -135,6 +135,7 @@ que o skip funciona sem Postgres/Redis, e o build de produção (`nest build`) s
 - **`critical-flows.e2e-spec.ts`**: fluxos ponta a ponta contra Postgres + Redis reais — cadastro, login, onboarding, cliente (criação e edição), cobrança aprovada, estorno, PIX com simulação de confirmação, refresh/logout, dashboard, idempotência, Redis, cancelamento bloqueado e isolamento de tenant; é pulado sem as duas URLs de teste.
 - **`admin-flows.e2e-spec.ts`**: lojista comum recebe 403 em `/admin`; usuário promovido via Prisma aprova KYB e a empresa fica `ACTIVE`.
 - **`apps/web/e2e/merchant-console.spec.ts`**: Playwright (Chromium) no console do lojista — onboarding, cliente, cobrança de cartão, estorno, API Key sandbox e logout.
+- **`apps/web/e2e/admin-console.spec.ts`**: Playwright do painel `/admin` — lojista redirecionado, admin promovido via Prisma, aprovação de KYB, suspensão e auditoria.
 
 ## Segurança implementada nesta fase
 
