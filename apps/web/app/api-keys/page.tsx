@@ -113,7 +113,12 @@ export default function ApiKeysPage() {
       <main className="max-w-5xl mx-auto px-6 py-10">
         <h1 className="text-xl font-semibold text-brand-900 mb-1">API Keys</h1>
         <p className="text-sm text-brand-600 mb-6">
-          Estas chaves autenticam a futura API pública. Elas não substituem o login do painel.
+          Use o header <code className="font-mono text-xs">X-Api-Key</code> (ou{' '}
+          <code className="font-mono text-xs">Authorization: Bearer</code> com a chave{' '}
+          <code className="font-mono text-xs">bpay_*</code>) nas rotas{' '}
+          <code className="font-mono text-xs">/v1/companies/{company?.id ?? ':companyId'}/customers</code> e{' '}
+          <code className="font-mono text-xs">/v1/companies/{company?.id ?? ':companyId'}/charges</code>. Marque só os
+          escopos que a integração precisa. Estas chaves não substituem o login do painel.
         </p>
 
         {revealed && (
