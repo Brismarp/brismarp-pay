@@ -6,13 +6,8 @@ import { ApiKeysService } from '../services/api-keys.service';
 import { CreateApiKeyDto } from '../dtos/create-api-key.dto';
 
 /**
- * SCAFFOLD — rotas já mapeadas conforme o escopo original (seção 8: Área do
- * Desenvolvedor). Papéis sugeridos abaixo (OWNER/ADMIN/DEVELOPER) seguem o RBAC
- * já existente — ajustar se necessário quando a lógica for implementada.
- *
- * Este controller ainda não está registrado em api-keys.module.ts/app.module.ts
- * de propósito, para não expor endpoints que hoje só lançam erro. Ver
- * api-keys.module.ts para o passo de habilitação.
+ * Rotas administrativas de API Keys (OWNER/ADMIN/DEVELOPER).
+ * O segredo completo só é devolvido na geração ou rotação.
  */
 @Controller('companies/:companyId/api-keys')
 @UseGuards(JwtAuthGuard, CompanyRolesGuard)

@@ -3,13 +3,9 @@ import { ApiKeysController } from './controllers/api-keys.controller';
 import { ApiKeysService } from './services/api-keys.service';
 
 /**
- * SCAFFOLD — módulo criado e pronto, mas intencionalmente NÃO importado em
- * app.module.ts, para não expor endpoints que hoje lançam erro (ApiKeysService
- * ainda não implementado).
- *
- * Para habilitar quando a lógica estiver pronta:
- *   1. Implementar os métodos de ApiKeysService (ver TODOs no arquivo).
- *   2. Importar `ApiKeysModule` em `app.module.ts` e adicioná-lo ao array `imports`.
+ * Gestão de API Keys (JWT + RBAC). O módulo está registrado em app.module.ts.
+ * ApiKeyAuthGuard autentica X-Api-Key / Bearer, mas ainda não protege as rotas
+ * públicas de cobrança/clientes — ver docs/FASE_7_API_TODO.md.
  */
 @Module({
   controllers: [ApiKeysController],

@@ -34,9 +34,9 @@ Consulte `docs/ARCHITECTURE.md` para as decisões de arquitetura.
 
 ## O que NÃO está implementado (próximas fases)
 
-Aprovação real de KYB por provedor externo, edição/remoção de clientes na UI, estornos com fluxo próprio, sistema de webhooks de saída, gestão avançada de incidentes/APM, notificações, promoção de usuários a admin pela própria interface, CI/CD e integração real com a Getnet. O webhook de entrada permanece preparado, mas sua autenticidade depende da implementação oficial do provider Getnet.
+Aprovação real de KYB por provedor externo, edição/remoção de clientes na UI, estornos com fluxo próprio, sistema de webhooks de saída, gestão avançada de incidentes/APM, notificações, promoção de usuários a admin pela própria interface e integração real com a Getnet. O webhook de entrada permanece preparado, mas sua autenticidade depende da implementação oficial do provider Getnet.
 
-**API pública / API Keys (Fase 7) — deixada como scaffold a pedido:** estrutura de pastas, contratos de método, DTOs e rotas já criados em `apps/api/src/modules/api-keys/`, mas a lógica não foi implementada e o módulo não está registrado em `app.module.ts`. Checklist detalhado de como retomar em `docs/FASE_7_API_TODO.md`.
+**API Keys:** geração, listagem, revogação e rotação estão implementadas (JWT + RBAC). `ApiKeyAuthGuard` existe, mas ainda não está ligado às rotas de cobrança/clientes — a API pública de negócio continua pendente. Ver `docs/FASE_7_API_TODO.md`.
 
 A operação assíncrona está documentada em `docs/OPERACAO_ASYNC.md`, e o checklist auditado está em `docs/IMPLEMENTACAO_REDIS_GETNET_CHECKLIST.md`.
 
@@ -51,7 +51,7 @@ make setup    # .env, Postgres, Redis, deps, schema
 make dev      # API + web
 ```
 
-Acesse `http://localhost:3000/register` para criar a primeira conta. `make help` lista os outros alvos (`api`, `web`, `worker`, `test`, `docker`).
+Acesse `http://localhost:3000` (redireciona para login, onboarding ou dashboard). `make help` lista os outros alvos (`api`, `web`, `worker`, `test`, `docker`).
 
 Dependências ficam em `apps/api` e `apps/web` — não há `package.json` na raiz.
 

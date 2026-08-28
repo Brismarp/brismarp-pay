@@ -9,18 +9,11 @@ A API HTTP não deve permanecer aguardando a confirmação definitiva de um paga
 Com PostgreSQL e Redis disponíveis, copie `.env.example` para `.env`, mantenha `PAYMENT_PROVIDER=mock` e execute:
 
 ```bash
-cd apps/api
-npm install
-npm run prisma:generate
-npm run start:dev
+make setup
+make dev    # API (3001), web (3000) e worker de recuperação
 ```
 
-Em outro terminal, execute o worker:
-
-```bash
-cd apps/api
-npm run worker:recovery
-```
+Ou, em processos separados: `make api`, `make web` e `make worker`.
 
 Com Docker Compose, a API e o worker são processos distintos:
 
