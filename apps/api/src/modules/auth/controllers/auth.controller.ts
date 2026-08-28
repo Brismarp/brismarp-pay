@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Req, Res, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, Res, HttpCode, HttpStatus, UseGuards, UnauthorizedException } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { AuthService } from '../services/auth.service';
@@ -41,6 +41,9 @@ export class AuthController {
     @Body() dto: RefreshTokenDto,
   ) {
     const rawRefreshToken = req.cookies?.[REFRESH_COOKIE] ?? dto.refreshToken;
+    if (!rawRefreshToken) {
+      throw new UnauthorizedException('Sessão expirada. Faça login novamente.');
+    }
     const tokens = await this.authService.refresh(rawRefreshToken);
     this.setRefreshCookie(res, tokens.refreshToken);
     return { accessToken: tokens.accessToken };
@@ -51,7 +54,7 @@ export class AuthController {
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const rawRefreshToken = req.cookies?.[REFRESH_COOKIE];
     if (rawRefreshToken) await this.authService.logout(rawRefreshToken);
-    res.clearCookie(REFRESH_COOKIE);
+    res.clearCookie(REFRESH_COOKIE, { path: '/v1/auth' });
     return { success: true };
   }
 
@@ -66,7 +69,7 @@ export class AuthController {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      path: '/auth',
+      path: '/v1/auth',
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
   }

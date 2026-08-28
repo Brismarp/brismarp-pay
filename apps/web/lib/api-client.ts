@@ -1,4 +1,6 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/v1';
+const ACCESS_TOKEN_KEY = 'bpay_access_token';
+const AUTH_SKIP_REFRESH = new Set(['/auth/login', '/auth/register', '/auth/refresh', '/auth/logout']);
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -6,20 +8,58 @@ export class ApiError extends Error {
   }
 }
 
+let refreshInFlight: Promise<string | null> | null = null;
+
+function readStoredAccessToken(): string | undefined {
+  if (typeof sessionStorage === 'undefined') return undefined;
+  return sessionStorage.getItem(ACCESS_TOKEN_KEY) ?? undefined;
+}
+
+async function refreshAccessToken(): Promise<string | null> {
+  if (refreshInFlight) return refreshInFlight;
+
+  refreshInFlight = (async () => {
+    const res = await fetch(`${API_URL}/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    if (!res.ok) {
+      sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+      return null;
+    }
+    const data = (await res.json()) as { accessToken: string };
+    sessionStorage.setItem(ACCESS_TOKEN_KEY, data.accessToken);
+    return data.accessToken;
+  })().finally(() => {
+    refreshInFlight = null;
+  });
+
+  return refreshInFlight;
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {},
   accessToken?: string,
+  retried = false,
 ): Promise<T> {
+  const token = readStoredAccessToken() ?? accessToken;
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
-    credentials: 'include', // necessário para o cookie HttpOnly de refresh token
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
   });
+
+  if (res.status === 401 && !retried && !AUTH_SKIP_REFRESH.has(path.split('?')[0])) {
+    const nextToken = await refreshAccessToken();
+    if (nextToken) return request<T>(path, options, nextToken, true);
+  }
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));

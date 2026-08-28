@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength, MaxLength, Matches } from 'class-validator';
+import { IsEmail, IsOptional, IsString, MinLength, MaxLength, Matches } from 'class-validator';
 
 export class RegisterDto {
   @IsString()
@@ -32,6 +32,7 @@ export class LoginDto {
 }
 
 export class RefreshTokenDto {
+  @IsOptional()
   @IsString()
-  refreshToken: string;
+  refreshToken?: string;
 }
