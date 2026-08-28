@@ -28,15 +28,16 @@ Consulte `docs/ARCHITECTURE.md` para as decisões de arquitetura.
 - Docker Compose para ambiente de desenvolvimento (Postgres + Redis + API + worker + Web)
 - Frontend com login, registro, onboarding de empresa e **dashboard com dados reais** funcionais, conectados de ponta a ponta à API
 - **Telas de Clientes e Cobranças no frontend**: listagem com busca/filtros/paginação, cadastro de cliente, criação de cobrança (PIX/cartão/débito/boleto), detalhe do cliente com histórico, detalhe da cobrança com timeline de eventos, cancelamento e o botão de simulação de confirmação (sandbox) — tudo consumindo os mesmos endpoints da API, nenhuma tela isolada sem integração
+- **API Keys no painel e nas rotas de negócio**: criar/revogar/rotacionar chaves (JWT). Clientes e cobranças também aceitam `X-Api-Key` com escopos; ver `docs/FASE_7_API_TODO.md`
 - Navegação compartilhada (`components/Nav.tsx`) e hook de sessão/empresa compartilhado (`lib/use-company-session.ts`) — evita duplicar a lógica de "usuário logado + empresa carregada" em cada página
 - **Painel administrativo** (`/admin/*`, backend em `modules/admin/`): dashboard consolidado cross-tenant (volume, taxas, clientes, empresas por status, KYB pendente), listagem/detalhe de empresas com busca e filtro, **ações administrativas reais** (ativar/suspender/bloquear empresa, aprovar/rejeitar KYB — aprovação ativa a empresa automaticamente, rejeição não altera nada sozinha), e consulta de auditoria com filtro por ação. Protegido por `PlatformAdminGuard`, completamente separado das rotas de empresa — usuário comum (mesmo `OWNER`) é redirecionado para fora se tentar acessar
 - **Testes automatizados**: 53 testes unitários (8 suítes, incluindo Redis, OAuth Getnet, idempotência, webhook, recuperação, ledger, auth, isolamento de tenant e ações administrativas). Suíte E2E com os fluxos críticos contra PostgreSQL + Redis reais, executada quando `TEST_DATABASE_URL` e `TEST_REDIS_URL` estão definidas. Ver `## Como executar os testes` abaixo
 
 ## O que NÃO está implementado (próximas fases)
 
-Aprovação real de KYB por provedor externo, edição/remoção de clientes na UI, estornos com fluxo próprio, sistema de webhooks de saída, gestão avançada de incidentes/APM, notificações, promoção de usuários a admin pela própria interface e integração real com a Getnet. O webhook de entrada permanece preparado, mas sua autenticidade depende da implementação oficial do provider Getnet.
+Aprovação real de KYB por provedor externo, remoção de clientes, estornos parciais, sistema de webhooks de saída, gestão avançada de incidentes/APM, notificações, promoção de usuários a admin pela própria interface e integração real com a Getnet. O webhook de entrada permanece preparado, mas sua autenticidade depende da implementação oficial do provider Getnet.
 
-**API Keys:** geração, listagem, revogação e rotação estão implementadas (JWT + RBAC). `ApiKeyAuthGuard` existe, mas ainda não está ligado às rotas de cobrança/clientes — a API pública de negócio continua pendente. Ver `docs/FASE_7_API_TODO.md`.
+**API Keys:** geração, listagem, revogação e rotação no painel (JWT). As mesmas rotas de clientes e cobranças aceitam `X-Api-Key` (ou Bearer `bpay_*`) com conferência de empresa e de escopo. Ledger, dashboard, admin e CRUD de chaves continuam só JWT. Ver `docs/FASE_7_API_TODO.md`.
 
 A operação assíncrona está documentada em `docs/OPERACAO_ASYNC.md`, e o checklist auditado está em `docs/IMPLEMENTACAO_REDIS_GETNET_CHECKLIST.md`.
 

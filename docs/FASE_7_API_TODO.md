@@ -1,6 +1,6 @@
 # Fase 7 — API pública e API Keys
 
-A fundação de API Keys foi implementada nesta rodada. O módulo está registrado no `app.module.ts`, as rotas administrativas estão protegidas por JWT/RBAC e o segredo completo nunca é persistido.
+Chaves autenticam as mesmas rotas de cobrança e clientes do painel (`/v1/companies/:companyId/...`). O painel continua só com JWT. Gestão de chaves (criar/listar/revogar/rotacionar) também é só JWT.
 
 ## Implementado
 
@@ -10,10 +10,44 @@ A fundação de API Keys foi implementada nesta rodada. O módulo está registra
 - Listagem sem chave completa nem hash.
 - Revogação lógica por `revokedAt`, preservando auditoria.
 - Rotação transacional: revoga a chave anterior e cria outra com os mesmos escopos e ambiente.
-- `ApiKeyAuthGuard` com `X-Api-Key` ou `Authorization: Bearer`, busca por hash, rejeição de revogadas e atualização assíncrona de `lastUsedAt`.
-- Contexto de empresa anexado à requisição como `companyContext`, com papel `API_KEY`.
+- `JwtOrApiKeyGuard` nas rotas de cobrança e clientes: `X-Api-Key` ou `Authorization: Bearer bpay_sandbox_|bpay_production_` autentica a chave; qualquer outro Bearer segue JWT.
+- Isolamento de tenant: a chave só opera na empresa em que foi gerada (`params.companyId` tem de coincidir).
+- Escopos por endpoint (JWT ignora `@RequireScopes`; API Key sem o escopo recebe 403):
+
+  | Rota | Escopo |
+  |---|---|
+  | `GET` customers, `GET` customers/:id | `customers:read` |
+  | `POST` / `PATCH` customers | `customers:write` |
+  | `GET` charges, `GET` :id, `GET` :id/status | `charges:read` |
+  | `POST` charges, `PATCH` cancel, `PATCH` refund, `PATCH` simulate-confirmation | `charges:write` |
+
+- `PATCH .../charges/:id/simulate-confirmation` com API Key só aceita `environment === SANDBOX`.
+- Auditoria: `AuditLog.actorUserId` fica nulo na chamada por chave; eventos usam `apiKey:<id>`.
 - Rate limiting global por IP já existente no aplicativo continua protegendo as rotas.
-- Provider padrão permanece `mock`; nenhuma chave sandbox pode, por si só, ativar a Getnet.
+- Provider padrão permanece `mock`. SANDBOX vs PRODUCTION é um rótulo na chave — nenhum dos dois ativa a Getnet.
+
+## Credencial
+
+```bash
+# Substitua COMPANY_ID e a chave revelada uma única vez no painel.
+export API=http://localhost:3001/v1
+export COMPANY_ID=...
+export KEY=bpay_sandbox_...
+
+curl -sS -X POST "$API/companies/$COMPANY_ID/customers" \
+  -H "X-Api-Key: $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Cliente API","document":"12345678900","email":"cliente@teste.com"}'
+
+curl -sS -X POST "$API/companies/$COMPANY_ID/charges" \
+  -H "X-Api-Key: $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"method":"CREDIT_CARD","amountCents":5000,"customerId":"<id-do-cliente>"}'
+```
+
+`Authorization: Bearer $KEY` também vale, desde que o valor comece com `bpay_sandbox_` ou `bpay_production_`.
+
+Rotas que **não** aceitam API Key: `/auth/*`, `/companies` (onboarding), `/api-keys`, dashboard, ledger, admin.
 
 ## Arquivos principais
 
@@ -23,11 +57,14 @@ apps/api/src/modules/api-keys/
 ├── controllers/api-keys.controller.ts
 ├── services/api-keys.service.ts
 ├── dtos/create-api-key.dto.ts
-└── guards/api-key-auth.guard.ts
+└── guards/
+    ├── api-key-auth.guard.ts
+    ├── api-key-credential.ts
+    └── jwt-or-api-key.guard.ts
 ```
 
 ## Limites que permanecem
 
-A autenticação de API Key está pronta para ser usada por uma API pública, mas ainda é necessário definir e implementar as rotas públicas específicas, seus escopos obrigatórios e o contrato de ambiente para cada operação. Também permanecem recomendáveis o rate limit específico por `apiKeyId`, logs detalhados de requisição, documentação OpenAPI e uma matriz formal de permissões por endpoint.
+`ledger:read` e `webhooks:manage` existem na lista de escopos, mas ainda não protegem rota nenhuma. Rate limit por `apiKeyId`, logs detalhados de requisição e OpenAPI continuam pendentes.
 
 Os webhooks de saída continuam sendo uma etapa separada. O schema já contém `Webhook` e `WebhookDelivery`, porém ainda é necessário implementar o dispatcher com assinatura, retry, backoff, entrega idempotente e painel de acompanhamento.
