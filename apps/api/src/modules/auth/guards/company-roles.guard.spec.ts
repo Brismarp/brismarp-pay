@@ -4,9 +4,15 @@ import { ForbiddenException, ExecutionContext } from '@nestjs/common';
 import { CompanyRolesGuard } from './company-roles.guard';
 import { PrismaService } from '../../../prisma/prisma.service';
 
-function mockExecutionContext(params: { userId?: string; companyId?: string; headerCompanyId?: string }): ExecutionContext {
+function mockExecutionContext(params: {
+  userId?: string;
+  companyId?: string;
+  headerCompanyId?: string;
+  apiKey?: { id: string; companyId: string; scopes: string[] };
+}): ExecutionContext {
   const request = {
     user: params.userId ? { id: params.userId } : undefined,
+    apiKey: params.apiKey,
     params: { companyId: params.companyId },
     headers: params.headerCompanyId ? { 'x-company-id': params.headerCompanyId } : {},
   };
@@ -81,5 +87,49 @@ describe('CompanyRolesGuard', () => {
     const request = ctx.switchToHttp().getRequest();
     await expect(guard.canActivate(ctx)).resolves.toBe(true);
     expect((request as any).companyContext).toEqual({ companyId: 'company-1', role: 'ADMIN' });
+  });
+
+  describe('API Key', () => {
+    it('permite quando a chave pertence à empresa e cobre o escopo', async () => {
+      reflector.getAllAndOverride.mockReturnValue(['charges:read']);
+      const ctx = mockExecutionContext({
+        companyId: 'company-1',
+        apiKey: { id: 'key-1', companyId: 'company-1', scopes: ['charges:read', 'charges:write'] },
+      });
+
+      await expect(guard.canActivate(ctx)).resolves.toBe(true);
+      expect(prisma.companyUser.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('bloqueia quando a chave é de outra empresa', async () => {
+      reflector.getAllAndOverride.mockReturnValue(['charges:read']);
+      const ctx = mockExecutionContext({
+        companyId: 'company-B',
+        apiKey: { id: 'key-1', companyId: 'company-A', scopes: ['charges:read'] },
+      });
+
+      await expect(guard.canActivate(ctx)).rejects.toThrow(ForbiddenException);
+      expect(prisma.companyUser.findFirst).not.toHaveBeenCalled();
+    });
+
+    it('bloqueia quando o escopo exigido não está na chave', async () => {
+      reflector.getAllAndOverride.mockReturnValue(['charges:write']);
+      const ctx = mockExecutionContext({
+        companyId: 'company-1',
+        apiKey: { id: 'key-1', companyId: 'company-1', scopes: ['charges:read'] },
+      });
+
+      await expect(guard.canActivate(ctx)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('bloqueia quando a rota não declara @RequireScopes (fail closed)', async () => {
+      reflector.getAllAndOverride.mockReturnValue(undefined);
+      const ctx = mockExecutionContext({
+        companyId: 'company-1',
+        apiKey: { id: 'key-1', companyId: 'company-1', scopes: ['charges:write'] },
+      });
+
+      await expect(guard.canActivate(ctx)).rejects.toThrow(ForbiddenException);
+    });
   });
 });
