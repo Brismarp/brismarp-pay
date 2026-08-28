@@ -134,6 +134,8 @@ export default function ChargeDetailPage() {
           )}
           {canRefund && (
             <button
+              type="button"
+              data-testid="charge-refund"
               onClick={handleRefund}
               disabled={actionLoading}
               className="text-sm border border-red-200 text-red-700 px-4 py-2 rounded-lg font-medium disabled:opacity-60"

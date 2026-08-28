@@ -42,6 +42,7 @@ export function Nav() {
         ))}
         <button
           type="button"
+          data-testid="nav-logout"
           onClick={handleLogout}
           className="ml-auto text-sm text-brand-600 hover:text-brand-900"
         >

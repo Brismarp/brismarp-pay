@@ -159,6 +159,7 @@ export default function NewChargePage() {
           <button
             type="submit"
             disabled={loading}
+            data-testid="new-charge-submit"
             className="w-full rounded-lg bg-brand-900 text-white py-2.5 text-sm font-medium disabled:opacity-60"
           >
             {loading ? 'Criando...' : 'Criar cobrança'}

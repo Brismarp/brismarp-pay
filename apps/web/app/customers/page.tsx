@@ -62,6 +62,7 @@ export default function CustomersPage() {
               message="Cadastre o primeiro cliente para começar a emitir cobranças."
               actionHref="/customers/new"
               actionLabel="Novo cliente"
+              actionTestId="customers-empty-cta"
             />
           )
         ) : (

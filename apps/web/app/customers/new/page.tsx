@@ -91,6 +91,7 @@ export default function NewCustomerPage() {
           <button
             type="submit"
             disabled={loading}
+            data-testid="new-customer-submit"
             className="w-full rounded-lg bg-brand-900 text-white py-2.5 text-sm font-medium disabled:opacity-60"
           >
             {loading ? 'Salvando...' : 'Salvar cliente'}

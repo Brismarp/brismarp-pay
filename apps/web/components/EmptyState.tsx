@@ -4,10 +4,12 @@ export function EmptyState({
   message,
   actionHref,
   actionLabel,
+  actionTestId,
 }: {
   message: string;
   actionHref?: string;
   actionLabel?: string;
+  actionTestId?: string;
 }) {
   return (
     <div className="rounded-lg border border-brand-200 bg-white p-6 text-sm text-brand-600">
@@ -15,6 +17,7 @@ export function EmptyState({
       {actionHref && actionLabel && (
         <Link
           href={actionHref}
+          data-testid={actionTestId}
           className="inline-block mt-3 text-sm bg-brand-900 text-white px-4 py-2 rounded-lg font-medium"
         >
           {actionLabel}

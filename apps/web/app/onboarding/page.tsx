@@ -143,6 +143,7 @@ export default function OnboardingPage() {
           <button
             type="submit"
             disabled={loading}
+            data-testid="onboarding-submit"
             className="w-full rounded-lg bg-brand-900 text-white py-2.5 text-sm font-medium disabled:opacity-60"
           >
             {loading ? 'Enviando...' : 'Concluir cadastro da empresa'}

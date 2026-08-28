@@ -178,6 +178,7 @@ export default function ApiKeysPage() {
           <button
             type="submit"
             disabled={creating || scopes.length === 0}
+            data-testid="api-keys-create"
             className="text-sm bg-brand-900 text-white px-4 py-2 rounded-lg font-medium disabled:opacity-60"
           >
             {creating ? 'Gerando...' : 'Gerar chave'}
