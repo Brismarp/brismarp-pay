@@ -14,7 +14,7 @@ export class PaymentRecoveryQueue implements OnModuleDestroy {
 
   async schedule(chargeId: string, delayMs = 60_000) {
     await this.queue.add('recover', { chargeId }, {
-      jobId: `recover:${chargeId}`,
+      jobId: `recover-${chargeId}`,
       delay: delayMs,
       attempts: 5,
       backoff: { type: 'exponential', delay: 30_000 },
