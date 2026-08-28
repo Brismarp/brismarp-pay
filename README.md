@@ -42,46 +42,18 @@ A operação assíncrona está documentada em `docs/OPERACAO_ASYNC.md`, e o chec
 
 **Importante sobre a taxa aplicada no ledger:** o código usa uma taxa fixa de 2,5% como placeholder determinístico (`PLACEHOLDER_FEE_BPS` em `charges.service.ts`) apenas para o ledger ter uma regra testável. Isso não reflete nenhuma tabela comercial real — a definição de taxas por empresa/plano é uma decisão de negócio pendente, não técnica.
 
-## Como instalar
+## Como instalar e executar
 
 ```bash
 git clone <repositorio>
 cd brismar-pay
-cp .env.example .env
-# Edite .env e gere um JWT_SECRET: openssl rand -hex 64
+make setup    # .env, Postgres, Redis, deps, schema
+make dev      # API + web
 ```
 
-## Como configurar o banco
+Acesse `http://localhost:3000/register` para criar a primeira conta. `make help` lista os outros alvos (`api`, `web`, `worker`, `test`, `docker`).
 
-```bash
-docker compose up -d postgres redis
-cd apps/api
-npm install
-npm run prisma:migrate    # cria as tabelas a partir do schema.prisma
-```
-
-> **Nota sobre `npm install` + Prisma em monorepo:** rode sempre `npm install`
-> dentro de `apps/api` (não na raiz) antes de `prisma generate`/`prisma:migrate`.
-> Se `node_modules/@prisma/client` local for removido manualmente e você rodar
-> `prisma generate` sem reinstalar antes, o Prisma pode gerar o client na raiz do
-> monorepo em vez de `apps/api/node_modules` — funciona (Node resolve para cima
-> na árvore de diretórios), mas é mais limpo sempre reinstalar localmente primeiro.
-
-## Como executar localmente (sem Docker completo)
-
-```bash
-# Terminal 1 — API
-cd apps/api
-npm install
-npm run start:dev
-
-# Terminal 2 — Web
-cd apps/web
-npm install
-npm run dev
-```
-
-Acesse `http://localhost:3000/register` para criar a primeira conta.
+Dependências ficam em `apps/api` e `apps/web` — não há `package.json` na raiz.
 
 ## Como executar com Docker
 
