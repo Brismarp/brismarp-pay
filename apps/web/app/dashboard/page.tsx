@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { apiClient, ApiError, DashboardSummary } from '@/lib/api-client';
 import { useCompanySession } from '@/lib/use-company-session';
 import { Nav } from '@/components/Nav';
+import { EmptyState } from '@/components/EmptyState';
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING_ONBOARDING: 'Onboarding pendente',
@@ -163,9 +164,11 @@ export default function DashboardPage() {
             Transações recentes
           </h2>
           {summary.recentCharges.length === 0 ? (
-            <div className="rounded-lg border border-brand-200 p-6 bg-white text-sm text-brand-600">
-              Nenhuma cobrança criada ainda.
-            </div>
+            <EmptyState
+              message="Nenhuma cobrança criada ainda."
+              actionHref="/charges/new"
+              actionLabel="Nova cobrança"
+            />
           ) : (
             <div className="rounded-lg border border-brand-200 bg-white overflow-hidden">
               <table className="w-full text-sm">

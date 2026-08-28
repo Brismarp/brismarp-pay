@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useCompanySession } from '@/lib/use-company-session';
 import { apiClient, ApiError, Customer, PaginatedResult } from '@/lib/api-client';
 import { Nav } from '@/components/Nav';
+import { EmptyState } from '@/components/EmptyState';
 
 export default function CustomersPage() {
   const { accessToken, company, error: sessionError, loading: sessionLoading } = useCompanySession();
@@ -54,9 +55,15 @@ export default function CustomersPage() {
         {!result ? (
           <p className="text-sm text-brand-600">Carregando...</p>
         ) : result.items.length === 0 ? (
-          <div className="rounded-lg border border-brand-200 bg-white p-6 text-sm text-brand-600">
-            Nenhum cliente encontrado.
-          </div>
+          search ? (
+            <EmptyState message="Nenhum cliente encontrado." />
+          ) : (
+            <EmptyState
+              message="Cadastre o primeiro cliente para começar a emitir cobranças."
+              actionHref="/customers/new"
+              actionLabel="Novo cliente"
+            />
+          )
         ) : (
           <div className="rounded-lg border border-brand-200 bg-white overflow-hidden">
             <table className="w-full text-sm">

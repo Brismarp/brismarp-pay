@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useCompanySession } from '@/lib/use-company-session';
 import { apiClient, ApiError, Charge, PaginatedResult } from '@/lib/api-client';
 import { Nav } from '@/components/Nav';
+import { EmptyState } from '@/components/EmptyState';
 
 const STATUS_OPTIONS = [
   'PENDING',
@@ -110,9 +111,15 @@ export default function ChargesPage() {
         {!result ? (
           <p className="text-sm text-brand-600">Carregando...</p>
         ) : result.items.length === 0 ? (
-          <div className="rounded-lg border border-brand-200 bg-white p-6 text-sm text-brand-600">
-            Nenhuma cobrança encontrada com estes filtros.
-          </div>
+          status || method ? (
+            <EmptyState message="Nenhuma cobrança encontrada com estes filtros." />
+          ) : (
+            <EmptyState
+              message="Crie a primeira cobrança para ver o fluxo de pagamentos."
+              actionHref="/charges/new"
+              actionLabel="Nova cobrança"
+            />
+          )
         ) : (
           <div className="rounded-lg border border-brand-200 bg-white overflow-hidden">
             <table className="w-full text-sm">
