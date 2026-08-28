@@ -29,9 +29,9 @@ install: ## Install API and web dependencies
 	@cd $(API) && npm install-scripts approve prisma @prisma/client @prisma/engines bcrypt >/dev/null 2>&1 || true
 	npm install --prefix $(WEB)
 
-prisma: env ## Generate Prisma client and apply the schema
+prisma: env ## Generate Prisma client and apply migrations
 	npm run prisma:generate --prefix $(API)
-	npx --prefix $(API) prisma db push --schema=../../packages/database/schema.prisma
+	npm run prisma:deploy --prefix $(API)
 
 api: env ## Start the NestJS API (watch)
 	npm run start:dev --prefix $(API)

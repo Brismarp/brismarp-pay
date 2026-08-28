@@ -49,7 +49,7 @@ jobs:
       - name: Generate Prisma client
         run: npm run prisma:generate
       - name: Apply database schema
-        run: npx prisma db push --schema=../../packages/database/schema.prisma --accept-data-loss
+        run: npm run prisma:deploy
       - name: Build
         run: npm run build
       - name: Unit tests
