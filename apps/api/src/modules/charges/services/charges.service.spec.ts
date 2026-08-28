@@ -273,4 +273,46 @@ describe('ChargesService', () => {
       expect(paymentProvider.refundPayment).not.toHaveBeenCalled();
     });
   });
+
+  describe('simulatePixConfirmation', () => {
+    it('aprova PIX pendente via simulação de sandbox', async () => {
+      prisma.charge.findFirst.mockResolvedValue({
+        id: 'charge-pix',
+        method: 'PIX',
+        status: 'PENDING',
+        companyId: 'company-1',
+        amountCents: 5_000,
+      });
+      prisma.__tx.charge.findUniqueOrThrow.mockResolvedValue({
+        id: 'charge-pix',
+        status: 'PENDING',
+        companyId: 'company-1',
+        amountCents: 5_000,
+      });
+      prisma.__tx.charge.update.mockResolvedValue({
+        id: 'charge-pix',
+        status: 'APPROVED',
+        companyId: 'company-1',
+        amountCents: 5_000,
+      });
+
+      await service.simulatePixConfirmation('company-1', 'charge-pix', actor);
+
+      expect(prisma.__tx.charge.update).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ status: 'APPROVED' }) }),
+      );
+    });
+
+    it('rejeita simulação de cartão já aprovado', async () => {
+      prisma.charge.findFirst.mockResolvedValue({
+        id: 'charge-1',
+        method: 'CREDIT_CARD',
+        status: 'APPROVED',
+      });
+
+      await expect(service.simulatePixConfirmation('company-1', 'charge-1', actor)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
 });
