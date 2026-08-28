@@ -188,6 +188,13 @@ export const apiClient = {
   cancelCharge: (companyId: string, chargeId: string, accessToken: string) =>
     request<Charge>(`/companies/${companyId}/charges/${chargeId}/cancel`, { method: 'PATCH' }, accessToken),
 
+  refundCharge: (companyId: string, chargeId: string, accessToken: string, reason?: string) =>
+    request<Charge>(
+      `/companies/${companyId}/charges/${chargeId}/refund`,
+      { method: 'PATCH', body: JSON.stringify(reason ? { reason } : {}) },
+      accessToken,
+    ),
+
   simulateChargeConfirmation: (companyId: string, chargeId: string, accessToken: string) =>
     request<Charge>(
       `/companies/${companyId}/charges/${chargeId}/simulate-confirmation`,

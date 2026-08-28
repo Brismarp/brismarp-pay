@@ -58,6 +58,21 @@ export default function ChargeDetailPage() {
     }
   }
 
+  async function handleRefund() {
+    if (!accessToken || !company) return;
+    if (!window.confirm('Estornar o valor líquido desta cobrança? A taxa permanece lançada.')) return;
+    setActionError(null);
+    setActionLoading(true);
+    try {
+      await apiClient.refundCharge(company.id, params.id, accessToken);
+      load();
+    } catch (err) {
+      setActionError(err instanceof ApiError ? err.message : 'Não foi possível estornar.');
+    } finally {
+      setActionLoading(false);
+    }
+  }
+
   if (sessionLoading || (!charge && !error)) {
     return (
       <main className="min-h-screen flex items-center justify-center px-4">
@@ -77,6 +92,7 @@ export default function ChargeDetailPage() {
   const canCancel = ['PENDING', 'PROCESSING'].includes(charge.status);
   const canSimulateConfirmation =
     (charge.method === 'PIX' || charge.method === 'BOLETO') && charge.status === 'PENDING';
+  const canRefund = charge.status === 'APPROVED';
 
   return (
     <>
@@ -114,6 +130,15 @@ export default function ChargeDetailPage() {
               className="text-sm border border-brand-200 text-brand-800 px-4 py-2 rounded-lg font-medium disabled:opacity-60"
             >
               Cancelar cobrança
+            </button>
+          )}
+          {canRefund && (
+            <button
+              onClick={handleRefund}
+              disabled={actionLoading}
+              className="text-sm border border-red-200 text-red-700 px-4 py-2 rounded-lg font-medium disabled:opacity-60"
+            >
+              Estornar
             </button>
           )}
         </div>
