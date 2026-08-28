@@ -20,7 +20,7 @@ export default defineConfig({
       command: process.env.CI ? 'npm run start:prod' : 'npm run start',
       cwd: apiDir,
       url: 'http://localhost:3001/v1/health',
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: !process.env.CI || process.env.PLAYWRIGHT_REUSE_SERVER === '1',
       timeout: 120_000,
       env: {
         ...process.env,
@@ -32,7 +32,7 @@ export default defineConfig({
     {
       command: process.env.CI ? 'npm run start' : 'npm run dev',
       url: 'http://localhost:3000',
-      reuseExistingServer: !process.env.CI,
+      reuseExistingServer: !process.env.CI || process.env.PLAYWRIGHT_REUSE_SERVER === '1',
       timeout: 120_000,
       env: {
         ...process.env,
