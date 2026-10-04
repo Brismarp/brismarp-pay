@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Brismar Pay — Relatório de execução</title>
+  <link rel="stylesheet" href="relatorio.css">
+</head>
+<body>
+  <div class="toolbar">
+    <span class="hint">No navegador: Destino → Salvar como PDF</span>
+    <button type="button" onclick="window.print()">Salvar como PDF</button>
+  </div>
+
+  <article class="page">
+    <header class="masthead">
+      <div class="brand">
+        <div class="mark" aria-hidden="true">B</div>
+        <div>
+          <div class="name">Brismarp</div>
+          <div class="sub">Brismar Pay · uso interno</div>
+        </div>
+      </div>
+      <div class="doc-meta">
+        <strong>28 de agosto de 2026</strong>
+        Equipe de desenvolvimento<br>
+        32 commits neste repositório
+      </div>
+    </header>
+
+    <h1>Relatório de execução</h1>
+    <p class="lede">
+      O que o git do Brismar Pay contém desde a primeira commit até a suíte de testes:
+      a plataforma ligou, o console do lojista ficou completo para o sandbox,
+      a API pública por chave entrou nas rotas de cliente e cobrança, e as três
+      camadas de teste (incluindo Playwright do <code>/admin</code>) passaram a rodar no CI.
+    </p>
+
+    <h2>1. Resumo</h2>
+    <p>
+      O repositório nasceu já com a base escrita: schema Prisma, provider mock,
+      painel Next, painel admin e a maior parte das regras de domínio.
+      A primeira commit (<span class="mono">dc1ffe3</span>) só guarda esse ponto de partida.
+      O que este histórico fez foi tornar isso executável e verificável.
+    </p>
+    <p>
+      A API passou a subir de verdade (módulos Nest, Makefile, migration, health no CI).
+      O lojista passou a editar cliente, gerar API Key, estornar cobrança aprovada no mock
+      e sair de listas vazias com um próximo passo. Integrações passaram a autenticar
+      as mesmas rotas de clientes e cobranças com <code>X-Api-Key</code>.
+      No fim, unitários, HTTP contra Postgres+Redis e Playwright do lojista
+      e do painel <code>/admin</code> fecharam o ciclo — ainda com
+      <code>PAYMENT_PROVIDER=mock</code>.
+      A Getnet continua bloqueada: não há contrato oficial no código e este relatório
+      não inventa um.
+    </p>
+
+    <div class="kpis">
+      <div class="kpi"><b>32</b><span>commits no git</span></div>
+      <div class="kpi"><b>91</b><span>testes unitários</span></div>
+      <div class="kpi"><b>13</b><span>suítes Jest</span></div>
+      <div class="kpi"><b>28</b><span>casos HTTP e2e</span></div>
+      <div class="kpi"><b>2</b><span>walks Playwright</span></div>
+      <div class="kpi"><b>2</b><span>jobs de CI</span></div>
+    </div>
+
+    <p class="note">
+      Os números de teste são os que rodaram neste ambiente em 28/08/2026:
+      91 unitários verdes, 28 HTTP e2e verdes (3 arquivos) e 2 specs Chromium verdes
+      (lojista e <code>/admin</code>). Não são percentual de produto pronto.
+    </p>
+
+    <h2>2. O que já existe e o que não existe</h2>
+    <div class="split">
+      <div class="panel">
+        <h3>O que já existe</h3>
+        <ul>
+          <li>Auth JWT, refresh em cookie HttpOnly, logout e lockout</li>
+          <li>Onboarding de empresa com CNPJ válido e KYB sem auto-aprovação</li>
+          <li>Clientes (criar, editar, buscar) e cobranças mock (PIX/cartão/débito/boleto)</li>
+          <li>Ledger derivado, dashboard agregado e estorno integral mock</li>
+          <li>API Keys no painel e nas rotas de customers/charges</li>
+          <li>Admin: status da empresa, KYB e auditoria (JWT + flag no banco)</li>
+          <li>Playwright do console do lojista e do painel <code>/admin</code></li>
+          <li>CI: boot da API, unitários, HTTP e2e e Playwright</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <h3>O que ainda não existe</h3>
+        <ul>
+          <li>Getnet ao vivo (adaptador estrutural só; sem chamadas reais)</li>
+          <li>Webhooks de saída (dispatcher, assinatura, retry)</li>
+          <li>Estorno parcial e remoção de clientes</li>
+          <li>Rate limit por chave e OpenAPI</li>
+          <li>Promoção de admin pela própria interface</li>
+          <li>Escopos <code>ledger:read</code> e <code>webhooks:manage</code> em rota alguma</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>3. Linha do tempo neste git</h2>
+    <p>
+      Quatro fatias. Não é o log inteiro — o anexo lista as 32 mensagens.
+    </p>
+    <div class="timeline">
+      <div class="tstep">
+        <div class="when">Boot</div>
+        <strong>A API liga</strong>
+        <div class="dur">Módulos Nest, Makefile, <code>/</code> por sessão, logout, refresh, migration Prisma, portas Compose, smoke <code>/v1/health</code>.</div>
+      </div>
+      <div class="tstep">
+        <div class="when">Console</div>
+        <strong>O lojista opera</strong>
+        <div class="dur">Editar cliente, tela de API Keys, estorno mock no ledger, CTA em lista vazia.</div>
+      </div>
+      <div class="tstep">
+        <div class="when">API pública</div>
+        <strong>A chave entra nas rotas</strong>
+        <div class="dur"><code>JwtOrApiKeyGuard</code>, escopos, tenant da chave, simulação de PIX só em SANDBOX.</div>
+      </div>
+      <div class="tstep">
+        <div class="when">Testes</div>
+        <strong>Três camadas no CI</strong>
+        <div class="dur">Unitários que faltavam, HTTP e2e (refund, PIX, refresh, KYB), Playwright do lojista e do <code>/admin</code>, job <code>web</code>.</div>
+      </div>
+    </div>
+
+    <h2>4. Como autenticar</h2>
+    <div class="flow">
+      <span>Painel</span>
+      <i>→</i>
+      <span>JWT + cookie de refresh</span>
+      <i>→</i>
+      <span>Integração</span>
+      <i>→</i>
+      <span>X-Api-Key ou Bearer bpay_*</span>
+    </div>
+    <p>
+      O console usa access token curto em <code>sessionStorage</code> e refresh
+      HttpOnly em <code>bpay_refresh_token</code> (path <code>/v1/auth</code>).
+      Integrações autenticam as rotas
+      <code>/v1/companies/:companyId/customers</code> e
+      <code>/v1/companies/:companyId/charges</code> com
+      <code>X-Api-Key</code> ou <code>Authorization: Bearer</code> começando em
+      <code>bpay_sandbox_</code> ou <code>bpay_production_</code>.
+      A chave só opera na empresa em que foi gerada.
+    </p>
+    <p>
+      Continuam só JWT: onboarding de empresa, CRUD de API Keys, dashboard, ledger, admin e auth.
+      <code>simulate-confirmation</code> com chave só aceita ambiente SANDBOX.
+      SANDBOX versus PRODUCTION é rótulo na chave — nenhum dos dois ativa a Getnet.
+    </p>
+
+    <h2>5. Matriz de testes</h2>
+    <p>
+      HTTP e2e é a camada de integração: Nest real + Postgres + Redis, pulada sem
+      <code>TEST_DATABASE_URL</code> / <code>TEST_REDIS_URL</code>.
+      Playwright cobre o console do lojista e o painel <code>/admin</code> em Chromium.
+      Não há chamada live à Getnet. Promoção a admin no walk é via Prisma
+      (<code>isPlatformAdmin</code>), não pela interface.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Fluxo</th>
+          <th>Unit</th>
+          <th>HTTP</th>
+          <th>UI</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Cadastro</td>
+          <td><span class="badge ok">Sim</span></td>
+          <td><span class="badge ok">Sim</span></td>
+          <td><span class="badge ok">Sim</span></td>
+        </tr>
+        <tr>
+          <td>Login (ok e senha errada)</td>
+          <td><span class="badge ok">Sim</span></td>
+          <td><span class="badge ok">Sim</span></td>
+          <td><span class="badge ok">Sim</span></td>
+        </tr>
+        <tr>
+          <td>Onboarding / CNPJ</td>
+          <td><span class="badge ok">Sim</span></td>
+          <td><span class="badge ok">Sim</span></td>
+          <td><span class="badge ok">Sim</span></td>
+        </tr>
+        <tr>
+          <td>Cliente criar e editar</td>
+          <td><span class="badge ok">Sim</span></td>
+          <td><span class="badge ok">Sim</span></td>
+          <td><span class="badge ok">Sim</span></td>
+        </tr>
+        <tr>
+          <td>Cobrança cartão (mock, &lt; R$ 10.000)</td>
+          <td><span class="badge ok">Sim</span></td>
+          <td><span class="badge ok">Sim</span></td>
+          <td><span class="badge ok">Sim</span></td>
+        </tr>
+        <tr>
+          <td>Estorno integral</td>
+          <td><span class="badge ok">Sim</span></td>
+          <td><span class="badge ok">Sim</span></td>
+          <td><span class="badge ok">Sim</span></td>
+        </tr>
+        <tr>
+          <td>PIX + simular confirmação</td>
+          <td><span class="badge ok">Sim</span></td>
+          <td><span class="badge ok">Sim</span></td>
+          <td><span class="badge wait">Não</span></td>
+        </tr>
+        <tr>
+          <td>API Key (gerar, escopos, tenant, revogar)</td>
+          <td><span class="badge ok">Sim</span></td>
+          <td><span class="badge ok">Sim</span></td>
+          <td><span class="badge mid">Gerar sandbox</span></td>
+        </tr>
+        <tr>
+          <td>Refresh cookie e logout</td>
+          <td><span class="badge mid">Parcial</span></td>
+          <td><span class="badge ok">Sim</span></td>
+          <td><span class="badge mid">Só logout</span></td>
+        </tr>
+        <tr>
+          <td>KYB admin (promovido via Prisma)</td>
+          <td><span class="badge ok">Sim</span></td>
+          <td><span class="badge ok">Sim</span></td>
+          <td><span class="badge ok">Sim</span></td>
+        </tr>
+        <tr>
+          <td>Painel <code>/admin</code> no browser</td>
+          <td><span class="badge wait">N/A</span></td>
+          <td><span class="badge wait">N/A</span></td>
+          <td><span class="badge ok">KYB, suspender, auditoria</span></td>
+        </tr>
+        <tr>
+          <td>Getnet ao vivo</td>
+          <td><span class="badge mid">Mapper/OAuth mock</span></td>
+          <td><span class="badge off">Fora</span></td>
+          <td><span class="badge off">Fora</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>6. Bugs que o teste encontrou</h2>
+    <p>
+      A suíte HTTP passou a usar o mesmo <code>ValidationPipe</code> e o mesmo
+      cookie parser da API de produção. Dois defeitos reais apareceram e foram corrigidos neste git.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Sintoma</th>
+          <th>Causa</th>
+          <th>Correção</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Login com e-mail e senha válidos respondia 400</td>
+          <td><code>twoFactorCode</code> no DTO era opcional no TypeScript, mas o pipe exigia a presença do campo</td>
+          <td><span class="mono">885766f</span> — <code>@IsOptional()</code> no DTO de login</td>
+        </tr>
+        <tr>
+          <td>PIX mock ia para <code>FAILED</code> depois de ficar <code>PENDING</code></td>
+          <td>BullMQ recusa job id com <code>:</code>; o id era <code>recover:{uuid}</code></td>
+          <td><span class="mono">885766f</span> — job id <code>recover-{chargeId}</code></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>7. Como rodar</h2>
+    <p>
+      Três alvos no Makefile. Unitários não precisam de Postgres nem Redis.
+      HTTP e2e e Playwright usam o Compose (portas do <code>.env</code>, neste ambiente 5433 e 6380).
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Camada</th>
+          <th>Comando</th>
+          <th>O que sobe</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Unitários</td>
+          <td><code>make test</code></td>
+          <td>Jest da API, Prisma mockado</td>
+        </tr>
+        <tr>
+          <td>HTTP e2e</td>
+          <td><code>make test-e2e</code></td>
+          <td>Nest + Postgres + Redis; sem <code>TEST_*</code> a suíte é pulada</td>
+        </tr>
+        <tr>
+          <td>Playwright</td>
+          <td><code>make test-ui</code></td>
+          <td>Chromium no lojista e no <code>/admin</code>; API + Next via <code>webServer</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Provider permanece <code>mock</code>. No CI, o job <code>api</code> roda unitários e HTTP e2e;
+      o job <code>web</code> instala Chromium, sobe a API e executa os dois walks.
+    </p>
+
+    <h2>8. Próximo</h2>
+    <ol class="order">
+      <li>Dispatcher de webhooks de saída: assinatura, retry, backoff, idempotência e painel. Schema já existe.</li>
+      <li>Integração Getnet só depois do contrato oficial (auth, paths, webhook). Nada inventado.</li>
+      <li>Rate limit por <code>apiKeyId</code>, OpenAPI, e ligar os escopos <code>ledger:read</code> / <code>webhooks:manage</code> se essas rotas existirem.</li>
+      <li>Promoção de admin pela UI, estorno parcial, remoção de clientes e tabela real de taxas (hoje 2,5% placeholder).</li>
+    </ol>
+
+    <h2>9. Anexo — commits deste repositório</h2>
+    <p>
+      Ordem cronológica, da primeira commit à última. Mensagens como estão no git.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:18%">Hash</th>
+          <th>Mensagem</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="mono">dc1ffe3</td><td>chore: save brismarp-pay updates</td></tr>
+        <tr><td class="mono">0c9e501</td><td>feat: wire missing Nest modules so the API can boot</td></tr>
+        <tr><td class="mono">d194dfe</td><td>chore: replace the root package.json with a Makefile</td></tr>
+        <tr><td class="mono">a04b4ef</td><td>feat: redirect / by session instead of rendering a 404</td></tr>
+        <tr><td class="mono">81e83e2</td><td>feat: add logout to merchant and admin navigation</td></tr>
+        <tr><td class="mono">52c39b4</td><td>feat: refresh expired access tokens from the HttpOnly cookie</td></tr>
+        <tr><td class="mono">2161240</td><td>docs: align README and API Keys comments with what is actually shipped</td></tr>
+        <tr><td class="mono">48683a0</td><td>chore: version the database with an initial Prisma migration</td></tr>
+        <tr><td class="mono">1e06fc8</td><td>chore: make Compose ports configurable and start the worker with make dev</td></tr>
+        <tr><td class="mono">8ccefb5</td><td>ci: fail the pipeline if the API cannot boot and serve /v1/health</td></tr>
+        <tr><td class="mono">27a2ed4</td><td>feat: let merchants edit customer name, email, and phone</td></tr>
+        <tr><td class="mono">e338000</td><td>feat: add an API Keys screen for create, revoke, and rotate</td></tr>
+        <tr><td class="mono">93d557d</td><td>feat: refund approved mock charges through the ledger</td></tr>
+        <tr><td class="mono">39a6058</td><td>test: cover full mock refund and rejection cases</td></tr>
+        <tr><td class="mono">fef370f</td><td>feat: add refund action on the charge detail page</td></tr>
+        <tr><td class="mono">d68e0bf</td><td>feat: add empty states with a next action on list pages</td></tr>
+        <tr><td class="mono">fd2b329</td><td>feat: accept API keys on charge and customer routes</td></tr>
+        <tr><td class="mono">1f23ce8</td><td>fix: export JWT auth so dual-auth guards can boot</td></tr>
+        <tr><td class="mono">1f35355</td><td>test: cover API key auth, tenant isolation, and scopes</td></tr>
+        <tr><td class="mono">276e541</td><td>docs: document the public API contract for API keys</td></tr>
+        <tr><td class="mono">ce89294</td><td>feat: explain live API key usage on the keys screen</td></tr>
+        <tr><td class="mono">bd60694</td><td>test: cover API keys, customers, and PIX simulation units</td></tr>
+        <tr><td class="mono">885766f</td><td>fix: allow login without 2FA and valid recovery job ids</td></tr>
+        <tr><td class="mono">4e84596</td><td>test: extend HTTP e2e to refund, PIX, refresh, and admin KYB</td></tr>
+        <tr><td class="mono">18ca8aa</td><td>feat: add test ids on merchant console actions</td></tr>
+        <tr><td class="mono">4948855</td><td>chore: add Playwright for the merchant console</td></tr>
+        <tr><td class="mono">e119ed0</td><td>test: walk the merchant console in the browser</td></tr>
+        <tr><td class="mono">978abc8</td><td>ci: run Playwright against the merchant console</td></tr>
+        <tr><td class="mono">56f594c</td><td>docs: document how to run unit, HTTP e2e, and Playwright</td></tr>
+        <tr><td class="mono">8f1ca25</td><td>feat: add test ids on admin console actions</td></tr>
+        <tr><td class="mono">e7be092</td><td>test: walk the admin console in the browser</td></tr>
+        <tr><td class="mono">d88bde1</td><td>docs: mention Playwright of the admin console</td></tr>
+      </tbody>
+    </table>
+
+    <footer>
+      <span>Brismar Pay · relatório interno · 28 de agosto de 2026</span>
+      <span>Provider: mock · Getnet não contratada neste relatório</span>
+    </footer>
+  </article>
+</body>
+</html>

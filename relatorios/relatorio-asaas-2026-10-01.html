@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Brismar Pay — Homologação concluída</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="relatorio-asaas-2026-10-01.css">
+</head>
+<body>
+  <div class="toolbar">
+    <a href="#telas">Ir para as telas</a>
+    <button type="button" onclick="window.print()">Salvar como PDF</button>
+  </div>
+
+  <div class="sheet">
+    <header class="cover">
+      <div>
+        <div class="brand">
+          <div class="mark">B</div>
+          <div>
+            <div class="name">Brismarp</div>
+            <div class="sub">Brismar Pay · uso interno</div>
+          </div>
+        </div>
+        <h1>A operação já fecha. O próximo passo é <span>dinheiro real.</span></h1>
+        <p>
+          Conta, empresa, cliente, cobrança, saldo e estorno estão no ar.
+          A Asaas de homologação já recebeu PIX, boleto e cartão. R$ 10 ficaram
+          R$ 9,75. O estorno devolveu o saldo a zero. As telas abaixo são as páginas
+          do console, na paleta carvão do produto.
+        </p>
+      </div>
+      <aside class="cover-side">
+        <strong>1º de outubro de 2026</strong>
+        <span>Console do lojista · Next.js</span>
+        <span>Homologação Asaas concluída</span>
+      </aside>
+    </header>
+
+    <section class="beats">
+      <article class="beat">
+        <b>Casa</b>
+        <p>Dashboard com saldo, volume, aprovação e as cobranças do período.</p>
+      </article>
+      <article class="beat">
+        <b>Dinheiro</b>
+        <p>Pendente não credita. Confirmado deixa o líquido. Estorno zera.</p>
+      </article>
+      <article class="beat">
+        <b>Aparência</b>
+        <p>Fundo #f7f8f9, texto #1a1d21, botão carvão. A mesma pele do console.</p>
+      </article>
+    </section>
+
+    <section class="chapter">
+      <h2>O que já funciona</h2>
+      <p class="intro">Cada peça está ligada na API, no banco e, quando é dinheiro, na Asaas.</p>
+      <ul class="lista">
+        <li>
+          <strong>Conta e empresa</strong>
+          <span>Cadastro, login, JWT, onboarding com CNPJ e KYB que ninguém aprova sozinho.</span>
+        </li>
+        <li>
+          <strong>Clientes e chaves</strong>
+          <span>Criar, editar e buscar. API Key cria, revoga e rotaciona. A rota aceita X-Api-Key.</span>
+        </li>
+        <li>
+          <strong>Cobrança</strong>
+          <span>PIX com QR, boleto, cartão com fatura, idempotência e cancelamento de pendente.</span>
+        </li>
+        <li>
+          <strong>Livro</strong>
+          <span>Taxa de 2,5%. Webhook repetido não soma de novo. Estorno devolve o líquido.</span>
+        </li>
+      </ul>
+    </section>
+
+    <section class="chapter">
+      <h2>O percurso</h2>
+      <p class="intro">O lojista entra, abre a casa e cobra. O admin olha a plataforma por fora.</p>
+      <ol class="path">
+        <li>Entrar</li>
+        <li>Empresa</li>
+        <li>Dashboard</li>
+        <li>Cliente</li>
+        <li>Cobrança</li>
+        <li>Saldo e estorno</li>
+        <li>Admin</li>
+      </ol>
+    </section>
+
+    <section class="chapter" id="telas">
+      <h2>Entrar e abrir a casa</h2>
+      <p class="intro">/login, /onboarding e /dashboard. A casa mostra o saldo que a homologação fechou.</p>
+      <div class="gallery">
+        <article class="shot">
+          <header>
+            <div>
+              <h3>Entrar</h3>
+              <p>E-mail e senha. Quem já tem empresa vai para o dashboard.</p>
+            </div>
+            <span class="num">01</span>
+          </header>
+          <div class="window">
+            <div class="chrome"><i></i><i></i><i></i><em>/login</em></div>
+            <div class="screen">
+              <div class="login">
+                <h4>Brismar Pay</h4>
+                <p class="sub">Entre na sua conta empresarial.</p>
+                <div class="form">
+                  <label><small>E-mail</small><div class="field"></div></label>
+                  <label><small>Senha</small><div class="field"></div></label>
+                </div>
+                <span class="btn">Entrar</span>
+              </div>
+            </div>
+          </div>
+        </article>
+        <article class="shot">
+          <header>
+            <div>
+              <h3>Empresa</h3>
+              <p>CNPJ, endereço e o aceite dos termos. O KYB começa em espera.</p>
+            </div>
+            <span class="num">02</span>
+          </header>
+          <div class="window">
+            <div class="chrome"><i></i><i></i><i></i><em>/onboarding</em></div>
+            <div class="screen">
+              <div class="body">
+                <h4>Sua empresa</h4>
+                <p class="sub">Dados para começar a cobrar.</p>
+                <div class="form">
+                  <label><small>Razão social</small><div class="field"></div></label>
+                  <label><small>CNPJ</small><div class="field"></div></label>
+                  <label><small>E-mail comercial</small><div class="field"></div></label>
+                </div>
+                <span class="btn">Continuar</span>
+              </div>
+            </div>
+          </div>
+        </article>
+        <article class="shot">
+          <header>
+            <div>
+              <h3>Dashboard</h3>
+              <p>R$ 9,75 disponíveis depois da taxa. Período de 7, 30 ou 90 dias.</p>
+            </div>
+            <span class="num">03</span>
+          </header>
+          <div class="window">
+            <div class="chrome"><i></i><i></i><i></i><em>/dashboard</em></div>
+            <div class="screen">
+              <div class="top">
+                <b>Brismar Pay</b>
+                <a class="on" href="#telas">Dashboard</a>
+                <a href="#telas">Clientes</a>
+                <a href="#telas">Cobranças</a>
+                <a href="#telas">API Keys</a>
+                <a class="out" href="#telas">Sair</a>
+              </div>
+              <div class="body">
+                <h4>Loja Sandbox</h4>
+                <p class="sub">Status da conta: Ativa · KYB aprovado</p>
+                <div class="pills"><span class="pill">7 dias</span><span class="pill on">30 dias</span><span class="pill">90 dias</span></div>
+                <div class="cards">
+                  <div class="card"><span>Saldo disponível</span><b>R$ 9,75</b></div>
+                  <div class="card"><span>Saldo pendente</span><b>R$ 0,00</b></div>
+                  <div class="card"><span>Volume</span><b>R$ 10,00</b></div>
+                  <div class="card"><span>Estornos</span><b>1</b></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+        <article class="shot">
+          <header>
+            <div>
+              <h3>Depois do estorno</h3>
+              <p>O mesmo dashboard. O disponível volta a zero.</p>
+            </div>
+            <span class="num">04</span>
+          </header>
+          <div class="window">
+            <div class="chrome"><i></i><i></i><i></i><em>/dashboard</em></div>
+            <div class="screen">
+              <div class="top">
+                <b>Brismar Pay</b>
+                <a class="on" href="#telas">Dashboard</a>
+                <a href="#telas">Clientes</a>
+                <a href="#telas">Cobranças</a>
+                <a class="out" href="#telas">Sair</a>
+              </div>
+              <div class="body">
+                <h4>Loja Sandbox</h4>
+                <p class="sub">O livro devolveu o líquido.</p>
+                <div class="cards">
+                  <div class="card"><span>Saldo disponível</span><b>R$ 0,00</b></div>
+                  <div class="card"><span>Taxas cobradas</span><b>R$ 0,25</b></div>
+                  <div class="card"><span>Aprovação</span><b>100%</b></div>
+                  <div class="card"><span>Estornos</span><b>1</b></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="chapter">
+      <h2>Cobrar</h2>
+      <p class="intro">/customers, /charges/new e o detalhe da cobrança. O PIX sai com QR. O saldo espera a confirmação.</p>
+      <div class="gallery">
+        <article class="shot">
+          <header>
+            <div>
+              <h3>Clientes</h3>
+              <p>Busca por nome, documento ou e-mail. O mesmo CPF reaproveita o cliente na Asaas.</p>
+            </div>
+            <span class="num">05</span>
+          </header>
+          <div class="window">
+            <div class="chrome"><i></i><i></i><i></i><em>/customers</em></div>
+            <div class="screen">
+              <div class="top">
+                <b>Brismar Pay</b>
+                <a href="#telas">Dashboard</a>
+                <a class="on" href="#telas">Clientes</a>
+                <a href="#telas">Cobranças</a>
+                <a class="out" href="#telas">Sair</a>
+              </div>
+              <div class="body">
+                <h4>Clientes</h4>
+                <p class="sub">1 cadastro · busca por documento</p>
+                <div class="rows">
+                  <div><b>Cliente Sandbox</b><span>390.533.447-05</span></div>
+                  <div><span>sandbox.brismar.pay@example.com</span><span class="tag">Ativo</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+        <article class="shot">
+          <header>
+            <div>
+              <h3>Nova cobrança</h3>
+              <p>PIX, cartão, débito ou boleto. A mesma chave não cria outra.</p>
+            </div>
+            <span class="num">06</span>
+          </header>
+          <div class="window">
+            <div class="chrome"><i></i><i></i><i></i><em>/charges/new</em></div>
+            <div class="screen">
+              <div class="top">
+                <b>Brismar Pay</b>
+                <a href="#telas">Dashboard</a>
+                <a href="#telas">Clientes</a>
+                <a class="on" href="#telas">Cobranças</a>
+                <a class="out" href="#telas">Sair</a>
+              </div>
+              <div class="body">
+                <h4>Nova cobrança</h4>
+                <div class="form">
+                  <label><small>Cliente</small><div class="field"></div></label>
+                  <label><small>Método · PIX</small><div class="field"></div></label>
+                  <label><small>Valor · R$ 10,00</small><div class="field"></div></label>
+                </div>
+                <span class="btn">Criar cobrança</span>
+              </div>
+            </div>
+          </div>
+        </article>
+        <article class="shot">
+          <header>
+            <div>
+              <h3>PIX pendente</h3>
+              <p>Copia-e-cola, QR e fatura. O saldo ainda é zero.</p>
+            </div>
+            <span class="num">07</span>
+          </header>
+          <div class="window">
+            <div class="chrome"><i></i><i></i><i></i><em>/charges/pix</em></div>
+            <div class="screen">
+              <div class="top">
+                <b>Brismar Pay</b>
+                <a href="#telas">Cobranças</a>
+                <a class="out" href="#telas">Sair</a>
+              </div>
+              <div class="body">
+                <h4>R$ 10,00 · PIX</h4>
+                <p class="sub">Pendente · pay_ na Asaas</p>
+                <div class="rows">
+                  <div><span>Status</span><b>Pendente</b></div>
+                  <div><span>Copia e cola</span><b>00020126…</b></div>
+                  <div><span>Saldo da casa</span><b>R$ 0,00</b></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+        <article class="shot">
+          <header>
+            <div>
+              <h3>API Keys</h3>
+              <p>Criar, revogar e rotacionar. A chave abre cliente e cobrança.</p>
+            </div>
+            <span class="num">08</span>
+          </header>
+          <div class="window">
+            <div class="chrome"><i></i><i></i><i></i><em>/api-keys</em></div>
+            <div class="screen">
+              <div class="top">
+                <b>Brismar Pay</b>
+                <a href="#telas">Dashboard</a>
+                <a href="#telas">Cobranças</a>
+                <a class="on" href="#telas">API Keys</a>
+                <a class="out" href="#telas">Sair</a>
+              </div>
+              <div class="body">
+                <h4>Chaves</h4>
+                <p class="sub">Sandbox · escopos de cliente e cobrança</p>
+                <div class="rows">
+                  <div><b>bpay_sandbox_••••</b><span class="tag">Ativa</span></div>
+                  <div><span>charges:write · customers:read</span><span>Revogar</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="chapter">
+      <h2>Admin</h2>
+      <p class="intro">/admin fica separado. O lojista não entra. Quem aprova o KYB ativa a empresa.</p>
+      <div class="gallery">
+        <article class="shot">
+          <header>
+            <div>
+              <h3>Empresas</h3>
+              <p>Busca, status e a fila de KYB. Aprovar ativa a conta.</p>
+            </div>
+            <span class="num">09</span>
+          </header>
+          <div class="window">
+            <div class="chrome"><i></i><i></i><i></i><em>/admin/companies</em></div>
+            <div class="screen">
+              <div class="top admin">
+                <b>Brismar Pay · Admin</b>
+                <a href="#telas">Dashboard</a>
+                <a class="on" href="#telas">Empresas</a>
+                <a href="#telas">Auditoria</a>
+              </div>
+              <div class="body">
+                <h4>Empresas</h4>
+                <div class="rows">
+                  <div><b>Loja Sandbox</b><span class="tag">Ativa</span></div>
+                  <div><span>KYB aprovado</span><span>Ver</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+        <article class="shot">
+          <header>
+            <div>
+              <h3>Auditoria</h3>
+              <p>Quem aprovou, quem suspendeu e quando. O rastro fica na plataforma.</p>
+            </div>
+            <span class="num">10</span>
+          </header>
+          <div class="window">
+            <div class="chrome"><i></i><i></i><i></i><em>/admin/audit-logs</em></div>
+            <div class="screen">
+              <div class="top admin">
+                <b>Brismar Pay · Admin</b>
+                <a href="#telas">Empresas</a>
+                <a class="on" href="#telas">Auditoria</a>
+              </div>
+              <div class="body">
+                <h4>Auditoria</h4>
+                <div class="rows">
+                  <div><b>kyb.approve</b><span>hoje</span></div>
+                  <div><b>charge.refund</b><span>hoje</span></div>
+                  <div><span>Loja Sandbox</span><span>sistema</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <p class="note">
+      Dez páginas do console, no mesmo encaixe do relatório do Checkme, com o carvão #1a1d21
+      e o fundo #f7f8f9 do Brismar Pay. A homologação na Asaas já fechou. O momento seguinte
+      é repetir este caminho com dinheiro real.
+    </p>
+  </div>
+</body>
+</html>
