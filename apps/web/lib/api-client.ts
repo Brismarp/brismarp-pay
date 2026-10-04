@@ -70,6 +70,13 @@ async function request<T>(
 }
 
 export const apiClient = {
+  health: () =>
+    request<{
+      status: string;
+      provider: string;
+      paymentsMode: 'sandbox' | 'production';
+    }>('/health'),
+
   register: (data: { name: string; email: string; password: string }) =>
     request<{ accessToken: string }>('/auth/register', {
       method: 'POST',

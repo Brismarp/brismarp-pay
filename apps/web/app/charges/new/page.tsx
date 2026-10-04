@@ -33,6 +33,22 @@ function NewChargeForm() {
   const [installments, setInstallments] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [sandbox, setSandbox] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    apiClient
+      .health()
+      .then((health) => {
+        if (!cancelled) setSandbox(health.paymentsMode !== 'production');
+      })
+      .catch(() => {
+        if (!cancelled) setSandbox(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!accessToken || !company) return;
@@ -92,6 +108,7 @@ function NewChargeForm() {
         <h1 className="text-xl font-semibold text-brand-900 mb-1">Nova cobrança</h1>
         <p className="text-sm text-brand-600 mb-6">
           A Asaas exige no mínimo R$ 5,00 por cobrança.
+          {sandbox ? ' No sandbox, PIX e boleto não recebem dinheiro real.' : ''}
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
