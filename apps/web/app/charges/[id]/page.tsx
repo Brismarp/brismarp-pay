@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useCompanySession } from '@/lib/use-company-session';
-import { apiClient, ApiError, Charge, ChargeEvent } from '@/lib/api-client';
+import { apiClient, ApiError, Charge, ChargeCheckout, ChargeEvent } from '@/lib/api-client';
+import { eventMessage, eventSourceLabel, failureText } from '@/lib/charge-events';
 import { Nav } from '@/components/Nav';
 
 function centsToBRL(cents: number): string {
@@ -11,6 +12,17 @@ function centsToBRL(cents: number): string {
 }
 
 type ChargeDetail = Charge & { events: ChargeEvent[]; transactions: unknown[] };
+
+function checkoutFromCharge(charge: ChargeDetail): ChargeCheckout | null {
+  if (charge.metadata?.checkout) return charge.metadata.checkout;
+  for (let i = charge.events.length - 1; i >= 0; i -= 1) {
+    const checkout = charge.events[i]?.metadata?.checkout;
+    if (checkout && (checkout.pixCopyPaste || checkout.pixQrCodeImage || checkout.invoiceUrl || checkout.bankSlipUrl)) {
+      return checkout;
+    }
+  }
+  return null;
+}
 
 export default function ChargeDetailPage() {
   const params = useParams<{ id: string }>();
@@ -89,9 +101,14 @@ export default function ChargeDetailPage() {
     );
   }
 
+  const checkout = checkoutFromCharge(charge);
+  const failed = charge.status === 'FAILED' || charge.status === 'DECLINED';
+  const latestFailure = [...charge.events].reverse().find((ev) => ev.toStatus === 'FAILED' || ev.toStatus === 'DECLINED');
   const canCancel = ['PENDING', 'PROCESSING'].includes(charge.status);
   const canSimulateConfirmation =
-    (charge.method === 'PIX' || charge.method === 'BOLETO') && charge.status === 'PENDING';
+    (charge.providerName ?? 'mock') === 'mock' &&
+    (charge.method === 'PIX' || charge.method === 'BOLETO') &&
+    charge.status === 'PENDING';
   const canRefund = charge.status === 'APPROVED';
 
   return (
@@ -103,11 +120,54 @@ export default function ChargeDetailPage() {
           {charge.method} · Status: <span className="font-medium">{charge.status}</span>
         </p>
 
+        {failed && (
+          <div className="rounded-lg border border-red-200 bg-red-50 text-red-800 text-sm px-4 py-3 mb-4">
+            <p className="font-medium mb-1">A operadora recusou esta cobrança</p>
+            <p>{failureText(eventMessage(latestFailure?.metadata))}</p>
+          </div>
+        )}
+
         {canSimulateConfirmation && (
           <div className="rounded-lg border border-amber-300 bg-amber-50 text-amber-800 text-sm px-4 py-3 mb-4">
             Esta cobrança está aguardando pagamento. O botão abaixo simula a confirmação apenas em
             ambiente de sandbox — em produção, a confirmação virá exclusivamente do webhook do
             provider real.
+          </div>
+        )}
+
+        {checkout && (
+          <div className="rounded-lg border border-brand-200 bg-white px-4 py-4 mb-6">
+            <p className="text-sm font-medium text-brand-900 mb-3">Pagamento</p>
+            {checkout.pixQrCodeImage && (
+              <img
+                src={`data:image/png;base64,${checkout.pixQrCodeImage}`}
+                alt="QR Code PIX"
+                className="w-44 h-44 mb-3 bg-white"
+              />
+            )}
+            {checkout.pixCopyPaste && (
+              <div className="mb-3">
+                <p className="text-xs text-brand-500 mb-1">PIX copia e cola</p>
+                <p className="text-xs font-mono break-all text-brand-800 bg-brand-50 rounded p-2">{checkout.pixCopyPaste}</p>
+                <button
+                  type="button"
+                  className="mt-2 text-xs text-brand-700 underline"
+                  onClick={() => navigator.clipboard.writeText(checkout.pixCopyPaste ?? '')}
+                >
+                  Copiar código PIX
+                </button>
+              </div>
+            )}
+            {checkout.invoiceUrl && (
+              <a href={checkout.invoiceUrl} target="_blank" rel="noreferrer" className="text-sm text-brand-800 underline">
+                Abrir fatura
+              </a>
+            )}
+            {checkout.bankSlipUrl && (
+              <a href={checkout.bankSlipUrl} target="_blank" rel="noreferrer" className="block text-sm text-brand-800 underline mt-1">
+                Baixar boleto
+              </a>
+            )}
           </div>
         )}
 
@@ -156,8 +216,11 @@ export default function ChargeDetailPage() {
                 <p className="text-brand-900">
                   {ev.fromStatus ? `${ev.fromStatus} → ${ev.toStatus}` : `Criada como ${ev.toStatus}`}
                 </p>
+                {eventMessage(ev.metadata) && (
+                  <p className="text-brand-700">{eventMessage(ev.metadata)}</p>
+                )}
                 <p className="text-xs text-brand-400">
-                  {new Date(ev.createdAt).toLocaleString('pt-BR')} · origem: {ev.source}
+                  {new Date(ev.createdAt).toLocaleString('pt-BR')} · {eventSourceLabel(ev.source)}
                 </p>
               </div>
             </li>

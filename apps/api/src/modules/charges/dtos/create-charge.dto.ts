@@ -12,7 +12,7 @@ export class CreateChargeDto {
   method: ChargeMethodDto;
 
   @IsInt()
-  @Min(100) // valor mínimo R$1,00 — evita cobranças de centavos por engano/abuso
+  @Min(500) // Asaas recusa cobrança abaixo de R$ 5,00
   amountCents: number;
 
   @IsUUID()

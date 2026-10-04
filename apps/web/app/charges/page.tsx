@@ -141,7 +141,12 @@ export default function ChargesPage() {
                       </Link>
                     </td>
                     <td className="px-4 py-2">{c.method}</td>
-                    <td className="px-4 py-2">{c.status}</td>
+                    <td className="px-4 py-2">
+                      <span>{c.status}</span>
+                      {c.failureMessage && (
+                        <p className="text-xs text-red-700 mt-1 max-w-xs">{c.failureMessage}</p>
+                      )}
+                    </td>
                     <td className="px-4 py-2 text-right">{centsToBRL(c.amountCents)}</td>
                     <td className="px-4 py-2 text-right text-brand-600">
                       {new Date(c.createdAt).toLocaleDateString('pt-BR')}

@@ -375,14 +375,31 @@ export class ChargesService {
     const [items, total] = await this.prisma.$transaction([
       this.prisma.charge.findMany({
         where,
-        include: { customer: { select: { id: true, name: true, document: true } } },
+        include: {
+          customer: { select: { id: true, name: true, document: true } },
+          events: {
+            where: { toStatus: { in: ['FAILED', 'DECLINED'] } },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: { metadata: true },
+          },
+        },
         orderBy: { [params.sortBy ?? 'createdAt']: params.sortOrder ?? 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
       this.prisma.charge.count({ where }),
     ]);
-    return { items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
+    return {
+      items: items.map(({ events, ...charge }) => ({
+        ...charge,
+        failureMessage: failureMessageFromMetadata(events[0]?.metadata),
+      })),
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    };
   }
 
   async getWithTimeline(companyId: string, chargeId: string) {
@@ -486,4 +503,12 @@ export class ChargesService {
     if (!charge) throw new NotFoundException('Cobrança não encontrada.');
     return charge;
   }
+}
+
+function failureMessageFromMetadata(metadata: unknown): string | null {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null;
+  const message = (metadata as { message?: unknown }).message;
+  if (typeof message !== 'string') return null;
+  const trimmed = message.trim();
+  return trimmed.length > 0 ? trimmed : null;
 }

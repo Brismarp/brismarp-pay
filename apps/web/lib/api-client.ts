@@ -356,6 +356,13 @@ export interface CreateCustomerPayload {
 
 export type ChargeMethod = 'PIX' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'BOLETO';
 
+export interface ChargeCheckout {
+  pixCopyPaste?: string;
+  pixQrCodeImage?: string;
+  invoiceUrl?: string;
+  bankSlipUrl?: string;
+}
+
 export interface Charge {
   id: string;
   method: ChargeMethod;
@@ -364,6 +371,10 @@ export interface Charge {
   installments: number;
   customerId: string;
   createdAt: string;
+  providerName?: string | null;
+  providerPaymentId?: string | null;
+  failureMessage?: string | null;
+  metadata?: { checkout?: ChargeCheckout } | null;
 }
 
 export interface ChargeEvent {
@@ -372,6 +383,7 @@ export interface ChargeEvent {
   toStatus: string;
   source: string;
   createdAt: string;
+  metadata?: { checkout?: ChargeCheckout; message?: string } | null;
 }
 
 export interface CreateChargePayload {

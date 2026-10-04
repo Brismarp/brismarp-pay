@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCompanySession } from '@/lib/use-company-session';
 import { apiClient, ApiError, ChargeMethod, Customer } from '@/lib/api-client';
@@ -14,6 +14,14 @@ const METHOD_LABEL: Record<ChargeMethod, string> = {
 };
 
 export default function NewChargePage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen flex items-center justify-center px-4"><p className="text-sm text-brand-600">Carregando...</p></main>}>
+      <NewChargeForm />
+    </Suspense>
+  );
+}
+
+function NewChargeForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { accessToken, company, loading: sessionLoading } = useCompanySession();
@@ -43,8 +51,8 @@ export default function NewChargePage() {
       setError('Selecione um cliente.');
       return;
     }
-    if (!amountCents || amountCents < 100) {
-      setError('Informe um valor válido (mínimo R$1,00).');
+    if (!amountCents || amountCents < 500) {
+      setError('Informe um valor válido (mínimo R$ 5,00).');
       return;
     }
 
@@ -83,8 +91,7 @@ export default function NewChargePage() {
       <main className="max-w-lg mx-auto px-6 py-10">
         <h1 className="text-xl font-semibold text-brand-900 mb-1">Nova cobrança</h1>
         <p className="text-sm text-brand-600 mb-6">
-          Processada pelo provider de sandbox (mock) — nenhuma transação real é enviada a nenhum
-          adquirente nesta fase.
+          A Asaas exige no mínimo R$ 5,00 por cobrança.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -138,6 +145,7 @@ export default function NewChargePage() {
               onChange={(e) => setAmount(e.target.value)}
               className="w-full rounded-lg border border-brand-200 px-3 py-2 text-sm"
             />
+            <p className="text-xs text-brand-400 mt-1">Mínimo R$ 5,00. Abaixo disso a Asaas recusa a cobrança.</p>
           </div>
 
           {method === 'CREDIT_CARD' && (
