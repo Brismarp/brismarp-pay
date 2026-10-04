@@ -37,7 +37,7 @@ Consulte `docs/ARCHITECTURE.md` para as decisões de arquitetura.
 
 Aprovação real de KYB por provedor externo, remoção de clientes, estornos parciais, sistema de webhooks de saída, gestão avançada de incidentes/APM, notificações, promoção de usuários a admin pela própria interface e captura de cartão no checkout próprio. Getnet continua só estrutural. Asaas já está ligado em homologação via `PAYMENT_PROVIDER=asaas`.
 
-**API Keys:** geração, listagem, revogação e rotação no painel (JWT). As mesmas rotas de clientes e cobranças aceitam `X-Api-Key` (ou Bearer `bpay_*`) com conferência de empresa e de escopo. Ledger, dashboard, admin e CRUD de chaves continuam só JWT. Ver `docs/FASE_7_API_TODO.md`.
+**API Keys:** geração, listagem, revogação e rotação no painel (JWT). As rotas de clientes, cobranças e extrato aceitam `X-Api-Key` (ou Bearer `bpay_*`) com conferência de empresa e de escopo. Saldo e extrato exigem `ledger:read`. Dashboard, admin e CRUD de chaves continuam só JWT. Ver `docs/FASE_7_API_TODO.md`.
 
 A operação assíncrona está documentada em `docs/OPERACAO_ASYNC.md`, e o checklist auditado está em `docs/IMPLEMENTACAO_REDIS_GETNET_CHECKLIST.md`.
 

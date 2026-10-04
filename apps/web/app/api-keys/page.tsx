@@ -5,7 +5,7 @@ import { useCompanySession } from '@/lib/use-company-session';
 import {
   apiClient,
   ApiError,
-  API_KEY_SCOPES,
+  API_KEY_SCOPE_OPTIONS,
   ApiKeyEnvironment,
   ApiKeyListItem,
   ApiKeySecretResponse,
@@ -161,18 +161,26 @@ export default function ApiKeysPage() {
             </div>
           </div>
           <fieldset>
-            <legend className="text-sm font-medium text-brand-800 mb-2">Escopos</legend>
-            <div className="grid sm:grid-cols-2 gap-2">
-              {API_KEY_SCOPES.map((scope) => (
-                <label key={scope} className="text-sm text-brand-700 flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={scopes.includes(scope)}
-                    onChange={() => toggleScope(scope)}
-                  />
-                  {scope}
-                </label>
-              ))}
+            <legend className="text-sm font-medium text-brand-800 mb-2">O que esta chave pode fazer</legend>
+            <div className="grid sm:grid-cols-2 gap-3">
+              {API_KEY_SCOPE_OPTIONS.map((scope) => {
+                const selected = scopes.includes(scope.id);
+                return (
+                  <button
+                    key={scope.id}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => toggleScope(scope.id)}
+                    className={`text-left rounded-lg border px-3 py-3 ${
+                      selected ? 'border-brand-900 bg-brand-50' : 'border-brand-200 bg-white'
+                    }`}
+                  >
+                    <span className="block text-sm font-medium text-brand-900">{scope.title}</span>
+                    <span className="block text-xs text-brand-600 mt-1">{scope.description}</span>
+                    <span className="block text-[11px] font-mono text-brand-400 mt-2">{scope.id}</span>
+                  </button>
+                );
+              })}
             </div>
           </fieldset>
           <button
@@ -212,7 +220,14 @@ export default function ApiKeysPage() {
               <tbody>
                 {keys.map((key) => (
                   <tr key={key.id} className="border-t border-brand-100">
-                    <td className="px-4 py-2 font-medium text-brand-900">{key.name}</td>
+                    <td className="px-4 py-2">
+                      <p className="font-medium text-brand-900">{key.name}</p>
+                      <p className="text-xs text-brand-600 mt-1">
+                        {key.scopes
+                          .map((scope) => API_KEY_SCOPE_OPTIONS.find((option) => option.id === scope)?.title ?? scope)
+                          .join(' · ')}
+                      </p>
+                    </td>
                     <td className="px-4 py-2 text-brand-600 font-mono text-xs">{key.prefix}…</td>
                     <td className="px-4 py-2">{key.environment}</td>
                     <td className="px-4 py-2">{key.revokedAt ? 'Revogada' : 'Ativa'}</td>

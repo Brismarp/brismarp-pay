@@ -1,14 +1,15 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { JwtOrApiKeyGuard } from '../../api-keys/guards/jwt-or-api-key.guard';
 import { CompanyRolesGuard } from '../../auth/guards/company-roles.guard';
 import { CompanyRoles } from '../../auth/guards/company-roles.decorator';
+import { RequireScopes } from '../../auth/guards/require-scopes.decorator';
 import { LedgerService } from '../services/ledger.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 
 const MAX_PAGE_SIZE = 100;
 
 @Controller('companies/:companyId/ledger')
-@UseGuards(JwtAuthGuard, CompanyRolesGuard)
+@UseGuards(JwtOrApiKeyGuard, CompanyRolesGuard)
 export class LedgerController {
   constructor(
     private readonly ledgerService: LedgerService,
@@ -17,6 +18,7 @@ export class LedgerController {
 
   @Get('balance')
   @CompanyRoles('OWNER', 'ADMIN', 'FINANCE', 'VIEWER')
+  @RequireScopes('ledger:read')
   async getBalance(@Param('companyId') companyId: string) {
     const availableBalanceCents = await this.ledgerService.getCurrentBalance(companyId);
     return { availableBalanceCents };
@@ -24,6 +26,7 @@ export class LedgerController {
 
   @Get('entries')
   @CompanyRoles('OWNER', 'ADMIN', 'FINANCE', 'VIEWER')
+  @RequireScopes('ledger:read')
   async listEntries(
     @Param('companyId') companyId: string,
     @Query('page') page?: string,

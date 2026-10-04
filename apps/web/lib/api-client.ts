@@ -433,14 +433,40 @@ export interface CreateCompanyPayload {
   privacyAccepted: boolean;
 }
 
-export const API_KEY_SCOPES = [
-  'charges:read',
-  'charges:write',
-  'customers:read',
-  'customers:write',
-  'ledger:read',
-  'webhooks:manage',
+export const API_KEY_SCOPE_OPTIONS = [
+  {
+    id: 'charges:read',
+    title: 'Ver cobranças',
+    description: 'Lista cobranças, abre o detalhe e consulta o status.',
+  },
+  {
+    id: 'charges:write',
+    title: 'Criar e alterar cobranças',
+    description: 'Cria, cancela e estorna. Sem este escopo, a chave só consulta.',
+  },
+  {
+    id: 'customers:read',
+    title: 'Ver clientes',
+    description: 'Lista clientes e abre o cadastro de cada um.',
+  },
+  {
+    id: 'customers:write',
+    title: 'Cadastrar e editar clientes',
+    description: 'Cria clientes novos e atualiza os dados dos existentes.',
+  },
+  {
+    id: 'ledger:read',
+    title: 'Consultar saldo e lançamentos',
+    description: 'Lê o saldo disponível e o extrato. Sem este escopo, a chave não acessa o extrato.',
+  },
+  {
+    id: 'webhooks:manage',
+    title: 'Gerenciar webhooks',
+    description: 'Ainda não altera o comportamento da chave. Nenhuma rota exige este escopo.',
+  },
 ] as const;
+
+export const API_KEY_SCOPES = API_KEY_SCOPE_OPTIONS.map((scope) => scope.id);
 
 export type ApiKeyEnvironment = 'SANDBOX' | 'PRODUCTION';
 
