@@ -23,7 +23,7 @@ Consulte `docs/ARCHITECTURE.md` para as decisões de arquitetura.
 - **Ledger financeiro real**: toda cobrança aprovada gera `Transaction` + lançamentos `LedgerEntry` (crédito líquido + taxa), calculados dentro de transação `Serializable` para evitar corrida de saldo; saldo nunca é um campo editável — é sempre derivado do último lançamento
 - Endpoints de saldo/extrato: `GET /companies/:id/ledger/balance`, `GET /companies/:id/ledger/entries`
 - **Dashboard real** (`GET /companies/:id/dashboard/summary?from=&to=`): saldo disponível e pendente, volume processado, quantidade de transações, taxa de aprovação, taxas cobradas, chargebacks, estornos, breakdown por status e transações recentes — tudo calculado por agregação direta no banco, sem nenhum número fixo. Frontend com período selecionável (7/30/90 dias)
-- Abstração `PaymentProvider` com `MockPaymentProvider` funcional e adaptador estrutural da Getnet — nenhuma chamada real à Getnet
+- Abstração `PaymentProvider` com `MockPaymentProvider`, `AsaasPaymentProvider` (sandbox real) e adaptador estrutural da Getnet. O app expõe a marca Brismar Pay; o processador ativo é `PAYMENT_PROVIDER` (`mock` | `asaas` | `getnet`).
 - Health checks (`GET /v1/health` e `GET /v1/health/queues`) validando banco e métricas básicas da fila
 - Docker Compose para ambiente de desenvolvimento (Postgres + Redis + API + worker + Web)
 - Frontend com login, registro, onboarding de empresa e **dashboard com dados reais** funcionais, conectados de ponta a ponta à API
@@ -35,7 +35,7 @@ Consulte `docs/ARCHITECTURE.md` para as decisões de arquitetura.
 
 ## O que NÃO está implementado (próximas fases)
 
-Aprovação real de KYB por provedor externo, remoção de clientes, estornos parciais, sistema de webhooks de saída, gestão avançada de incidentes/APM, notificações, promoção de usuários a admin pela própria interface e integração real com a Getnet. O webhook de entrada permanece preparado, mas sua autenticidade depende da implementação oficial do provider Getnet.
+Aprovação real de KYB por provedor externo, remoção de clientes, estornos parciais, sistema de webhooks de saída, gestão avançada de incidentes/APM, notificações, promoção de usuários a admin pela própria interface e captura de cartão no checkout próprio. Getnet continua só estrutural. Asaas já está ligado em homologação via `PAYMENT_PROVIDER=asaas`.
 
 **API Keys:** geração, listagem, revogação e rotação no painel (JWT). As mesmas rotas de clientes e cobranças aceitam `X-Api-Key` (ou Bearer `bpay_*`) com conferência de empresa e de escopo. Ledger, dashboard, admin e CRUD de chaves continuam só JWT. Ver `docs/FASE_7_API_TODO.md`.
 
@@ -83,7 +83,7 @@ usuários a admin pela própria interface (ficaria natural adicionar em
 
 ## Variáveis de ambiente
 
-Ver `.env.example` — todas as variáveis necessárias estão documentadas ali, incluindo os placeholders reservados (não preenchidos) para a futura integração Getnet.
+Ver `.env.example` — variáveis do app, da Getnet (ainda placeholders) e da Asaas (chave só no `.env` local, nunca no git).
 
 ## Como executar os testes
 
@@ -117,7 +117,7 @@ cd apps/web && npx playwright install chromium
 make test-ui
 ```
 
-`PAYMENT_PROVIDER` permanece `mock`. O walk de `/admin` promove o usuário via Prisma (`isPlatformAdmin`); não existe auto-promote na API. Sem chamadas Getnet.
+`PAYMENT_PROVIDER` nos testes permanece `mock`. O walk de `/admin` promove o usuário via Prisma (`isPlatformAdmin`); não existe auto-promote na API. Sem chamadas Asaas/Getnet na suíte.
 
 **Executado nesta entrega, de verdade** (não apenas escrito): `npm install`, `prisma
 generate`, os 53 testes unitários (8 suítes, todas verdes), a suíte E2E confirmando
@@ -147,6 +147,15 @@ que o skip funciona sem Postgres/Redis, e o build de produção (`nest build`) s
 - Validação de entrada estrita (`whitelist` + `forbidNonWhitelisted` em todos os DTOs)
 - Headers de segurança via Helmet
 - Isolamento de tenant reforçado no `CompanyRolesGuard` (nunca confia em `companyId` vindo do corpo da requisição sem cruzar com o vínculo real no banco)
+
+## Processador Asaas (homologação)
+
+A API pública que o lojista vê continua Brismar Pay. Por baixo, `PAYMENT_PROVIDER=asaas` envia PIX, boleto e cartão para a Asaas (sandbox: `https://api-sandbox.asaas.com`).
+
+1. Cole `ASAAS_API_KEY` e `ASAAS_WEBHOOK_TOKEN` no `.env` (já gitignorado).
+2. No painel Asaas, cadastre o webhook `POST /v1/webhooks/asaas` com o mesmo token no header `asaas-access-token`.
+3. Reinicie API e worker. `GET /v1/health` deve responder `"provider": "asaas"`.
+4. Testes unitários, e2e HTTP e Playwright forçam `mock` e não usam essa chave.
 
 ## Processo futuro de integração com a Getnet
 

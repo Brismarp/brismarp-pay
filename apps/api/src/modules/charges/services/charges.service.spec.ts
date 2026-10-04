@@ -148,7 +148,7 @@ describe('ChargesService', () => {
     expect(txArgs.amountCents).toBe(5_000);
     expect(txArgs.feeCents).toBeGreaterThan(0);
     expect(txArgs.netAmountCents).toBe(5_000 - txArgs.feeCents);
-    expect(ledgerService.append).toHaveBeenCalledWith(prisma.__tx, expect.objectContaining({ type: 'CREDIT', amountCents: txArgs.netAmountCents }));
+    expect(ledgerService.append).toHaveBeenCalledWith(prisma.__tx, expect.objectContaining({ type: 'CREDIT', amountCents: txArgs.amountCents }));
     expect(ledgerService.append).toHaveBeenCalledWith(prisma.__tx, expect.objectContaining({ type: 'FEE', amountCents: txArgs.feeCents }));
   });
 
@@ -313,6 +313,14 @@ describe('ChargesService', () => {
       await expect(service.simulatePixConfirmation('company-1', 'charge-1', actor)).rejects.toThrow(
         BadRequestException,
       );
+    });
+
+    it('bloqueia simulação quando o provider não é o mock interno', async () => {
+      paymentProvider.name = 'asaas';
+      await expect(service.simulatePixConfirmation('company-1', 'charge-pix', actor)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(prisma.charge.findFirst).not.toHaveBeenCalled();
     });
   });
 });

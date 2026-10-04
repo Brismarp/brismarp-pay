@@ -34,6 +34,7 @@ export class LedgerService {
     const isCredit = params.type === 'CREDIT';
     const delta = isCredit ? params.amountCents : -params.amountCents;
     const balanceAfterCents = currentBalance + delta;
+    const createdAt = new Date(Math.max(Date.now(), (lastEntry?.createdAt?.getTime() ?? 0) + 1));
 
     return tx.ledgerEntry.create({
       data: {
@@ -45,6 +46,7 @@ export class LedgerService {
         referenceId: params.referenceId,
         description: params.description,
         performedBy: params.performedBy,
+        createdAt,
       },
     });
   }

@@ -14,13 +14,28 @@ export class ProviderWebhooksController {
   @Post('getnet')
   @HttpCode(204)
   async getnet(@Body() body: unknown, @Headers() headers: Record<string, string>) {
-    if (this.provider.name !== 'getnet' && process.env.ALLOW_SANDBOX_WEBHOOK !== 'true') {
+    this.assertProvider('getnet');
+    await this.ingest(body, headers);
+  }
+
+  @Post('asaas')
+  @HttpCode(204)
+  async asaas(@Body() body: unknown, @Headers() headers: Record<string, string>) {
+    this.assertProvider('asaas');
+    await this.ingest(body, headers);
+  }
+
+  private assertProvider(expected: string) {
+    if (this.provider.name !== expected && process.env.ALLOW_SANDBOX_WEBHOOK !== 'true') {
       throw new UnauthorizedException();
     }
+  }
 
+  private async ingest(body: unknown, headers: Record<string, string>) {
     const event = await this.provider.processWebhook(body, headers);
     const eventKey = String(
-      (event.raw as any).eventId
+      (event.raw as any).id
+      ?? (event.raw as any).eventId
       ?? (event.raw as any).event_id
       ?? (event.raw as any).eventKey
       ?? `${event.eventType}:${event.providerPaymentId}:${event.newStatus}`,
@@ -30,7 +45,7 @@ export class ProviderWebhooksController {
 
     const persisted = await this.prisma.incomingWebhookEvent.upsert({
       where: { idempotencyKey: eventKey },
-        update: { payload: event.raw as any, signatureValid },
+      update: { payload: event.raw as any, signatureValid },
       create: {
         provider: this.provider.name,
         eventType: event.eventType,

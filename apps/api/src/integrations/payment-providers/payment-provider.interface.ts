@@ -6,8 +6,8 @@
  * ledger) pode importar um provider concreto (ex: GetnetPaymentProvider) diretamente.
  * Toda referência é feita através desta interface, injetada via token PAYMENT_PROVIDER.
  *
- * Quando a Getnet for integrada (fase futura), apenas um GetnetPaymentProvider
- * implementando esta mesma interface será adicionado — nenhuma linha de domínio muda.
+ * Providers concretos (mock, asaas, getnet) implementam esta mesma interface.
+ * Trocar o processador é PAYMENT_PROVIDER no ambiente — o domínio de cobrança/ledger não muda.
  */
 
 export type PaymentMethodType = 'PIX' | 'CREDIT_CARD' | 'DEBIT_CARD' | 'BOLETO';
@@ -22,6 +22,7 @@ export interface CreatePaymentInput {
     externalId: string;
     name: string;
     document: string;
+    email?: string;
   };
   idempotencyKey: string;
   metadata?: Record<string, unknown>;

@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import { AppModule } from '../../src/app.module';
 
 export async function createTestApp(): Promise<INestApplication> {
+  process.env.PAYMENT_PROVIDER = 'mock';
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
   const app = moduleRef.createNestApplication();
   app.use(cookieParser());

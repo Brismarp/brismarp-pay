@@ -25,7 +25,7 @@ export default defineConfig({
       env: {
         ...process.env,
         PORT: '3001',
-        PAYMENT_PROVIDER: process.env.PAYMENT_PROVIDER ?? 'mock',
+        PAYMENT_PROVIDER: 'mock',
         CORS_ALLOWED_ORIGINS: process.env.CORS_ALLOWED_ORIGINS ?? 'http://localhost:3000',
       },
     },

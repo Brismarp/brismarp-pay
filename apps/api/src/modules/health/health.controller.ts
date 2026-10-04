@@ -13,9 +13,19 @@ export class HealthController {
   async check() {
     try {
       await this.prisma.$queryRaw`SELECT 1`;
-      return { status: 'ok', database: 'connected', timestamp: new Date().toISOString() };
+      return {
+        status: 'ok',
+        database: 'connected',
+        provider: process.env.PAYMENT_PROVIDER ?? 'mock',
+        timestamp: new Date().toISOString(),
+      };
     } catch {
-      return { status: 'degraded', database: 'unreachable', timestamp: new Date().toISOString() };
+      return {
+        status: 'degraded',
+        database: 'unreachable',
+        provider: process.env.PAYMENT_PROVIDER ?? 'mock',
+        timestamp: new Date().toISOString(),
+      };
     }
   }
 

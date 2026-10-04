@@ -101,7 +101,12 @@ export class ChargesService {
           currency: 'BRL',
           method: dto.method,
           installments: dto.installments,
-          customer: { externalId: customer.id, name: customer.name, document: customer.document },
+          customer: {
+            externalId: customer.id,
+            name: customer.name,
+            document: customer.document,
+            email: customer.email ?? undefined,
+          },
           idempotencyKey,
           metadata: dto.metadata,
         });
@@ -152,6 +157,11 @@ export class ChargesService {
   }
 
   async simulatePixConfirmation(companyId: string, chargeId: string, actor: ChargeActor) {
+    if (this.paymentProvider.name !== 'mock') {
+      throw new BadRequestException(
+        'Simulação disponível apenas com o provider interno. Com Asaas, a confirmação chega pelo webhook ou pelo sandbox da Asaas.',
+      );
+    }
     const charge = await this.getOwned(companyId, chargeId);
     if (charge.method !== 'PIX' && charge.method !== 'BOLETO') throw new BadRequestException('Simulação disponível apenas para PIX/Boleto.');
     if (!['PENDING', 'PROCESSING'].includes(charge.status)) throw new BadRequestException(`Cobrança não está pendente (status atual: ${charge.status}).`);
@@ -431,10 +441,10 @@ export class ChargesService {
     await this.ledgerService.append(tx, {
       companyId,
       type: 'CREDIT',
-      amountCents: netAmountCents,
+      amountCents,
       referenceType: 'charge',
       referenceId: chargeId,
-      description: 'Cobrança aprovada (líquido de taxa)',
+      description: 'Cobrança aprovada',
       performedBy: actorSource,
     });
     if (feeCents > 0) {

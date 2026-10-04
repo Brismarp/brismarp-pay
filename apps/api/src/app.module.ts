@@ -19,7 +19,7 @@ import { ApiKeysModule } from './modules/api-keys/api-keys.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, expandVariables: false }),
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 100 }]),
     PrismaModule, RedisModule, QueuesModule, AuthModule, PaymentProvidersModule,
     HealthModule, CompaniesModule, CustomersModule, ChargesModule, LedgerModule,
