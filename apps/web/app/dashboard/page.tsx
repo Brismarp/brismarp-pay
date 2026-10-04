@@ -8,11 +8,38 @@ import { EmptyState } from '@/components/EmptyState';
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING_ONBOARDING: 'Onboarding pendente',
-  PENDING_KYB: 'Aguardando análise de compliance (KYB)',
+  PENDING_KYB: 'Aguardando verificação da empresa',
   ACTIVE: 'Ativa',
   SUSPENDED: 'Suspensa',
   BLOCKED: 'Bloqueada',
 };
+
+const VERIFICATION_LABEL: Record<string, string> = {
+  NOT_STARTED: 'Não iniciada',
+  IN_REVIEW: 'Em análise',
+  APPROVED: 'Aprovada',
+  REJECTED: 'Recusada',
+};
+
+function verificationNotice(status: string): { title: string; body: string } | null {
+  if (status === 'APPROVED') return null;
+  if (status === 'IN_REVIEW') {
+    return {
+      title: 'Verificação em análise',
+      body: 'Os dados da empresa já estão em conferência. O painel e as cobranças de teste continuam disponíveis. Quando a análise terminar, a conta passa a aprovada ou recusada.',
+    };
+  }
+  if (status === 'REJECTED') {
+    return {
+      title: 'Verificação recusada',
+      body: 'A conferência dos dados da empresa não foi aprovada. O painel continua acessível. Fale com a Brismar para enviar os dados novamente.',
+    };
+  }
+  return {
+    title: 'Verificação dos dados da empresa',
+    body: 'A Brismar confere os dados enviados no cadastro antes de considerar a conta aprovada. O painel e as cobranças de teste continuam disponíveis. A conta fica pendente até alguém aprovar no console de administração.',
+  };
+}
 
 const CHARGE_STATUS_LABEL: Record<string, string> = {
   PENDING: 'Pendente',
@@ -84,6 +111,8 @@ export default function DashboardPage() {
     );
   }
 
+  const notice = verificationNotice(company.kybStatus);
+
   return (
     <>
       <Nav />
@@ -96,7 +125,8 @@ export default function DashboardPage() {
             <p className="text-sm text-brand-600">
               Status da conta: <span className="font-medium">{STATUS_LABEL[company.status] ?? company.status}</span>
               {' · '}
-              KYB: <span className="font-medium">{company.kybStatus}</span>
+              Verificação da empresa:{' '}
+              <span className="font-medium">{VERIFICATION_LABEL[company.kybStatus] ?? company.kybStatus}</span>
             </p>
           </div>
 
@@ -117,10 +147,10 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {company.kybStatus === 'NOT_STARTED' && (
-          <div className="rounded-lg border border-amber-300 bg-amber-50 text-amber-800 text-sm px-4 py-3 mb-6">
-            A análise de compliance (KYB) da sua empresa ainda não foi iniciada. Algumas operações
-            podem ficar limitadas até a aprovação.
+        {notice && (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 text-amber-900 text-sm px-4 py-3 mb-6">
+            <p className="font-medium mb-1">{notice.title}</p>
+            <p>{notice.body}</p>
           </div>
         )}
 
