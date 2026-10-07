@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UnauthorizedException, ConflictException, ForbiddenException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { AuthService } from './auth.service';
+import { MailService } from './mail.service';
 import { PrismaService } from '../../../prisma/prisma.service';
 
 // Mock leve do Prisma — testes unitários não dependem de banco real.
@@ -24,6 +25,12 @@ function createPrismaMock() {
     auditLog: {
       create: jest.fn(),
     },
+    emailToken: {
+      create: jest.fn(),
+      update: jest.fn(),
+      updateMany: jest.fn(),
+      findUnique: jest.fn(),
+    },
   };
 }
 
@@ -42,6 +49,7 @@ describe('AuthService', () => {
           provide: JwtService,
           useValue: { sign: jest.fn().mockReturnValue('fake.jwt.token') },
         },
+        { provide: MailService, useValue: { send: jest.fn() } },
       ],
     }).compile();
 

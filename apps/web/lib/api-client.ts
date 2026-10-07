@@ -1,6 +1,14 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/v1';
 const ACCESS_TOKEN_KEY = 'bpay_access_token';
-const AUTH_SKIP_REFRESH = new Set(['/auth/login', '/auth/register', '/auth/refresh', '/auth/logout']);
+const AUTH_SKIP_REFRESH = new Set([
+  '/auth/login',
+  '/auth/register',
+  '/auth/refresh',
+  '/auth/logout',
+  '/auth/forgot-password',
+  '/auth/reset-password',
+  '/auth/verify-email',
+]);
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -92,7 +100,39 @@ export const apiClient = {
   logout: () => request<{ success: boolean }>('/auth/logout', { method: 'POST' }),
 
   me: (accessToken: string) =>
-    request<{ id: string; email: string; isPlatformAdmin: boolean }>('/auth/me', {}, accessToken),
+    request<{ id: string; email: string; isPlatformAdmin: boolean; emailVerifiedAt: string | null }>(
+      '/auth/me',
+      {},
+      accessToken,
+    ),
+
+  verifyEmail: (token: string) =>
+    request<{ verified: boolean }>('/auth/verify-email', {
+      method: 'POST',
+      body: JSON.stringify({ token }),
+    }),
+
+  resendVerification: (accessToken: string) =>
+    request<{ sent: boolean; alreadyVerified: boolean }>('/auth/resend-verification', { method: 'POST' }, accessToken),
+
+  forgotPassword: (email: string) =>
+    request<{ ok: boolean }>('/auth/forgot-password', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    }),
+
+  resetPassword: (token: string, password: string) =>
+    request<{ reset: boolean }>('/auth/reset-password', {
+      method: 'POST',
+      body: JSON.stringify({ token, password }),
+    }),
+
+  changePassword: (currentPassword: string, newPassword: string, accessToken: string) =>
+    request<{ changed: boolean }>(
+      '/auth/password',
+      { method: 'POST', body: JSON.stringify({ currentPassword, newPassword }) },
+      accessToken,
+    ),
 
   listMyCompanies: (accessToken: string) =>
     request<

@@ -37,3 +37,40 @@ export class RefreshTokenDto {
   @IsString()
   refreshToken?: string;
 }
+
+const PASSWORD_RULES = {
+  message: 'A senha deve conter letras e números',
+};
+
+export class TokenDto {
+  @IsString()
+  @MinLength(20)
+  token: string;
+}
+
+export class ForgotPasswordDto {
+  @IsEmail()
+  email: string;
+}
+
+export class ResetPasswordDto {
+  @IsString()
+  @MinLength(20)
+  token: string;
+
+  @IsString()
+  @MinLength(10)
+  @Matches(/(?=.*[A-Za-z])(?=.*\d)/, PASSWORD_RULES)
+  password: string;
+}
+
+export class ChangePasswordDto {
+  @IsString()
+  @MinLength(1)
+  currentPassword: string;
+
+  @IsString()
+  @MinLength(10)
+  @Matches(/(?=.*[A-Za-z])(?=.*\d)/, PASSWORD_RULES)
+  newPassword: string;
+}

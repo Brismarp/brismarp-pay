@@ -2,7 +2,7 @@ import { Body, Controller, Get, Post, Req, Res, HttpCode, HttpStatus, UseGuards,
 import { Throttle } from '@nestjs/throttler';
 import type { Request, Response } from 'express';
 import { AuthService } from '../services/auth.service';
-import { RegisterDto, LoginDto, RefreshTokenDto } from '../dtos/auth.dto';
+import { RegisterDto, LoginDto, RefreshTokenDto, TokenDto, ForgotPasswordDto, ResetPasswordDto, ChangePasswordDto } from '../dtos/auth.dto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { CurrentUser } from '../decorators/current-user.decorator';
 
@@ -60,8 +60,44 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  async me(@CurrentUser() user: { id: string; email: string; isPlatformAdmin: boolean }) {
-    return user;
+  async me(@CurrentUser() user: { id: string }) {
+    return this.authService.profile(user.id);
+  }
+
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  verifyEmail(@Body() dto: TokenDto) {
+    return this.authService.verifyEmail(dto.token);
+  }
+
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  resendVerification(@CurrentUser() user: { id: string }) {
+    return this.authService.resendVerification(user.id);
+  }
+
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.requestPasswordReset(dto.email);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto.token, dto.password);
+  }
+
+  @Post('password')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  changePassword(@CurrentUser() user: { id: string }, @Body() dto: ChangePasswordDto) {
+    return this.authService.changePassword(user.id, dto.currentPassword, dto.newPassword);
   }
 
   private setRefreshCookie(res: Response, token: string) {

@@ -113,11 +113,31 @@ model User {
   companies         CompanyUser[]
   refreshTokens     RefreshToken[]
   auditLogs         AuditLog[]
+  emailTokens       EmailToken[]
 
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
   @@index([email])
+}
+
+enum EmailTokenPurpose {
+  VERIFY
+  RESET
+}
+
+/// Token de uso único para confirmar e-mail ou redefinir senha. Só o hash fica no banco.
+model EmailToken {
+  id        String            @id @default(uuid())
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  purpose   EmailTokenPurpose
+  tokenHash String            @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime          @default(now())
+
+  @@index([userId, purpose])
 }
 
 enum CompanyRole {

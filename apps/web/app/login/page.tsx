@@ -57,6 +57,12 @@ export default function LoginPage() {
             />
           </div>
 
+          <p className="text-sm">
+            <a href="/forgot-password" className="text-brand-900 font-medium underline">
+              Esqueci a senha
+            </a>
+          </p>
+
           {error && <p className="text-sm text-red-600" role="alert">{error}</p>}
 
           <button
