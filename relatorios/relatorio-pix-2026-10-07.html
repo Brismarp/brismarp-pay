@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Brismar Pay — cobrança PIX</title>
+  <style>
+    :root {
+      --ink: #1c2430;
+      --muted: #5c6775;
+      --line: #e3e8ee;
+      --paper: #f4f6f8;
+      --card: #ffffff;
+      --green: #157a3a;
+      --green-soft: #e8f6ee;
+      --brand: #0f3d4c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 17px/1.6 "Segoe UI", system-ui, sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+    }
+    header {
+      background: var(--brand);
+      color: #fff;
+      padding: 2.5rem 1.25rem 2rem;
+    }
+    header .wrap, main { max-width: 44rem; margin: 0 auto; }
+    .kicker {
+      margin: 0 0 .4rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      font-size: .75rem;
+      color: #b7d4c4;
+    }
+    h1 { margin: 0; font-size: 1.85rem; line-height: 1.2; font-weight: 650; }
+    header p { margin: .7rem 0 0; color: #d5e4ea; max-width: 36rem; }
+    main { padding: 1.75rem 1.25rem 3rem; }
+    section {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 1.25rem 1.35rem 1.4rem;
+      margin: 0 0 1rem;
+    }
+    h2 { margin: 0 0 .6rem; font-size: 1.15rem; }
+    p { margin: .55rem 0; }
+    .ok {
+      display: inline-block;
+      background: var(--green-soft);
+      color: var(--green);
+      font-weight: 650;
+      border-radius: 999px;
+      padding: .2rem .7rem;
+      font-size: .92rem;
+    }
+    figure { margin: 1rem 0 .2rem; }
+    img {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      display: block;
+    }
+    figcaption { margin-top: .45rem; color: var(--muted); font-size: .88rem; }
+    ol { margin: .4rem 0 0; padding: 0; list-style: none; counter-reset: step; }
+    li {
+      counter-increment: step;
+      display: grid;
+      grid-template-columns: 2rem 1fr;
+      gap: .75rem;
+      padding: .7rem 0;
+      border-top: 1px solid var(--line);
+    }
+    li:first-child { border-top: 0; }
+    li::before {
+      content: counter(step);
+      width: 2rem;
+      height: 2rem;
+      border-radius: 999px;
+      background: var(--brand);
+      color: #fff;
+      font-size: .85rem;
+      font-weight: 650;
+      display: grid;
+      place-items: center;
+    }
+    li strong { display: block; }
+    li span { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <p class="kicker">Brismar Pay · 7 de outubro de 2026</p>
+      <h1>Cobrança PIX no painel</h1>
+      <p>O lojista cria a cobrança no navegador. A Asaas de produção devolve o pagamento e o painel mostra o QR Code, o código para copiar e a fatura.</p>
+    </div>
+  </header>
+  <main>
+    <section>
+      <p class="ok">PIX de R$ 10,00 criado</p>
+      <p>Às 03:31, uma cobrança PIX de R$ 10,00 foi gerada no painel local e registrada na Asaas. Em um segundo ela saiu de PROCESSING e ficou PENDING, pronta para o pagador.</p>
+      <figure>
+        <img src="pix-funcionou.png" alt="Tela da cobrança PIX de R$ 10,00 pendente, com QR Code, código copia e cola e fatura">
+        <figcaption>Valor em destaque, status PENDING, QR Code, código copia e cola e os atalhos “Copiar código PIX” e “Abrir fatura”.</figcaption>
+      </figure>
+      <p>A linha do tempo da própria tela guarda os dois momentos: criada como PROCESSING às 03:31:31 e atualizada para PENDING às 03:31:32. O lojista pode enviar o código ao cliente ou abrir a fatura da Asaas. Enquanto o PIX ainda não foi pago, a cobrança pode ser cancelada no mesmo painel.</p>
+    </section>
+
+    <section>
+      <h2>Como o lojista cobra</h2>
+      <ol>
+        <li>
+          <div>
+            <strong>Entra no painel</strong>
+            <span>Com e-mail e senha. O menu leva a Clientes, Cobranças e API Keys.</span>
+          </div>
+        </li>
+        <li>
+          <div>
+            <strong>Cadastra o cliente</strong>
+            <span>Nome e CPF ou CNPJ. O e-mail do cliente, quando informado, segue junto para a Asaas.</span>
+          </div>
+        </li>
+        <li>
+          <div>
+            <strong>Abre Nova cobrança</strong>
+            <span>Escolhe PIX, informa o valor e o cliente. O menor valor aceito é R$ 5,00. A mesma tela também gera boleto e cartão.</span>
+          </div>
+        </li>
+        <li>
+          <div>
+            <strong>A Asaas devolve o PIX</strong>
+            <span>O Brismar Pay pede o pagamento na Asaas e guarda o identificador. A tela passa a mostrar QR Code, copia e cola e o link da fatura.</span>
+          </div>
+        </li>
+        <li>
+          <div>
+            <strong>O cliente paga</strong>
+            <span>Quando a Asaas confirma o recebimento, o status da cobrança é atualizado e a linha do tempo ganha o novo evento. O saldo do lojista acompanha essa confirmação.</span>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>O que o painel guarda</h2>
+      <p>Cada cobrança fica com valor, meio de pagamento, cliente, status e a sequência de eventos. Nada é apagado da linha do tempo: o histórico só recebe linhas novas. A lista de cobranças mostra o estado atual, e o detalhe mostra o QR Code enquanto o PIX está pendente.</p>
+      <p>Quem integra por API usa a mesma criação de cobrança, com chave de idempotência para uma repetição não gerar dois PIX. O painel do navegador é o caminho usado nesta prova.</p>
+    </section>
+  </main>
+</body>
+</html>

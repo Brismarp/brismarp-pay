@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <title>Brismar Pay — e-mail de conta</title>
+  <style>
+    :root {
+      --ink: #1c2430;
+      --muted: #5c6775;
+      --line: #e3e8ee;
+      --paper: #f4f6f8;
+      --card: #ffffff;
+      --green: #157a3a;
+      --green-soft: #e8f6ee;
+      --brand: #0f3d4c;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 17px/1.6 "Segoe UI", system-ui, sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+    }
+    header {
+      background: var(--brand);
+      color: #fff;
+      padding: 2.5rem 1.25rem 2rem;
+    }
+    header .wrap, main { max-width: 44rem; margin: 0 auto; }
+    .kicker {
+      margin: 0 0 .4rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      font-size: .75rem;
+      color: #b7d4c4;
+    }
+    h1 { margin: 0; font-size: 1.85rem; line-height: 1.2; font-weight: 650; }
+    header p { margin: .7rem 0 0; color: #d5e4ea; max-width: 36rem; }
+    main { padding: 1.75rem 1.25rem 3rem; }
+    section {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 1.25rem 1.35rem 1.4rem;
+      margin: 0 0 1rem;
+    }
+    h2 { margin: 0 0 .6rem; font-size: 1.15rem; }
+    p { margin: .55rem 0; }
+    .ok {
+      display: inline-block;
+      background: var(--green-soft);
+      color: var(--green);
+      font-weight: 650;
+      border-radius: 999px;
+      padding: .2rem .7rem;
+      font-size: .92rem;
+    }
+    figure { margin: 1rem 0 .2rem; }
+    img {
+      width: 100%;
+      height: auto;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      display: block;
+    }
+    figcaption { margin-top: .45rem; color: var(--muted); font-size: .88rem; }
+    ol { margin: .4rem 0 0; padding: 0; list-style: none; counter-reset: step; }
+    li {
+      counter-increment: step;
+      display: grid;
+      grid-template-columns: 2rem 1fr;
+      gap: .75rem;
+      padding: .7rem 0;
+      border-top: 1px solid var(--line);
+    }
+    li:first-child { border-top: 0; }
+    li::before {
+      content: counter(step);
+      width: 2rem;
+      height: 2rem;
+      border-radius: 999px;
+      background: var(--brand);
+      color: #fff;
+      font-size: .85rem;
+      font-weight: 650;
+      display: grid;
+      place-items: center;
+    }
+    li strong { display: block; }
+    li span { color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap">
+      <p class="kicker">Brismar Pay · 7 de outubro de 2026</p>
+      <h1>E-mail de conta</h1>
+      <p>Ao criar a conta, o Brismar Pay envia um e-mail com link. A pessoa clica e cai na página de confirmação. O mesmo canal avisa a troca de senha e entrega o link de quem esqueceu a senha.</p>
+    </div>
+  </header>
+  <main>
+    <section>
+      <p class="ok">Mensagem entregue às 03:34</p>
+      <p>A criação da conta gerou o e-mail “Sua conta Brismar Pay foi criada”. O remetente foi Brismar Pay, no endereço dev@brismarppay.com.br, e a mensagem chegou na caixa de entrada do Gmail.</p>
+      <figure>
+        <img src="email-funcionou.png" alt="Gmail com o e-mail Sua conta Brismar Pay foi criada e o link Confirmar e-mail">
+        <figcaption>Caixa de entrada com o assunto, o remetente e o link “Confirmar e-mail”.</figcaption>
+      </figure>
+      <p>O texto cumprimenta o titular, diz que a conta foi criada e pede a confirmação do endereço. O link vale 24 horas e só pode ser usado uma vez. Quem já entrou no painel e ainda não confirmou vê um aviso com o botão Reenviar.</p>
+    </section>
+
+    <section>
+      <h2>Confirmar a conta</h2>
+      <ol>
+        <li>
+          <div>
+            <strong>A pessoa se cadastra</strong>
+            <span>Informa nome, e-mail e senha. O login já funciona nesse momento, para a pessoa seguir o cadastro da empresa.</span>
+          </div>
+        </li>
+        <li>
+          <div>
+            <strong>O Brismar Pay envia um e-mail só</strong>
+            <span>O assunto é “Sua conta Brismar Pay foi criada”. Dentro dele está o botão Confirmar e-mail. Não há código numérico: o caminho é o link.</span>
+          </div>
+        </li>
+        <li>
+          <div>
+            <strong>O clique abre a página certa</strong>
+            <span>O endereço leva a /verify-email. A página confirma o token e marca o e-mail como verificado.</span>
+          </div>
+        </li>
+        <li>
+          <div>
+            <strong>O aviso sai do painel</strong>
+            <span>Depois da confirmação, a faixa “Confirme o e-mail da sua conta” deixa de aparecer. Se o link vencer, a pessoa pede outro pelo Reenviar.</span>
+          </div>
+        </li>
+      </ol>
+    </section>
+
+    <section>
+      <h2>Senha</h2>
+      <p>Na tela de login, “Esqueci a senha” pede o e-mail e envia “Redefinir senha”. Esse link vale 1 hora e abre /reset-password, onde a pessoa escolhe a senha nova. A resposta é a mesma se o e-mail existir ou não.</p>
+      <p>Quem já está logado troca a senha em Senha, no menu. Informa a senha atual e a nova. Não há um segundo clique para aprovar: em seguida sai o aviso “Sua senha foi alterada”. Se a troca não foi da própria pessoa, o caminho é o “Esqueci a senha”.</p>
+    </section>
+  </main>
+</body>
+</html>
