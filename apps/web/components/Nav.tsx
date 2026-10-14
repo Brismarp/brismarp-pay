@@ -58,7 +58,7 @@ export function Nav() {
             B
           </span>
           <span>
-            Brismar<span>Pay</span>
+            Brismarp <span>Pay</span>
           </span>
         </Link>
         <button
@@ -93,7 +93,7 @@ export function Nav() {
             B
           </span>
           <span>
-            Brismar<span>Pay</span>
+            Brismarp <span>Pay</span>
           </span>
         </Link>
 
