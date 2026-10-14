@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { MotionEffects } from "./motion-effects";
 
 export const metadata: Metadata = {
   title: "Brismarp Pay | Pagamentos para desenvolvedores e negócios",
@@ -19,7 +20,10 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="pt-BR">
-      <body>{children}</body>
+      <body>
+        <MotionEffects />
+        {children}
+      </body>
     </html>
   );
 }

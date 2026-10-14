@@ -55,6 +55,7 @@ const code = `curl -X POST "$API_URL/v1/companies/$COMPANY_ID/charges" \\
   }'`;
 
 export default function Home() {
+  const codeLines = code.split("\n");
   return (
     <>
       <a className="skip-link" href="#conteudo">
@@ -168,9 +169,22 @@ export default function Home() {
               Disponibilidade conforme sua operação e o processador.
             </span>
           </div>
+          <div
+            className="payment-marquee"
+            aria-label="Uma integração para acompanhar seus recebimentos"
+          >
+            <div className="payment-marquee-track" aria-hidden="true">
+              {[0, 1].map((loop) => (
+                <span key={loop}>
+                  PIX <i>✳</i> BOLETO <i>✳</i> CARTÃO <i>✳</i> API REST <i>✳</i>{" "}
+                  COBRANÇAS <i>✳</i> PAINEL <i>✳</i>{" "}
+                </span>
+              ))}
+            </div>
+          </div>
         </section>
         <section className="section container" id="produto">
-          <div className="section-heading">
+          <div className="section-heading" data-reveal>
             <p className="eyebrow">01 / PARA NEGÓCIOS</p>
             <h2>
               Menos caminhos.
@@ -183,8 +197,13 @@ export default function Home() {
             </p>
           </div>
           <div className="feature-grid">
-            {features.map(([number, title, text]) => (
-              <article className="feature" key={number}>
+            {features.map(([number, title, text], index) => (
+              <article
+                className="feature"
+                key={number}
+                data-reveal
+                style={{ transitionDelay: `${index * 70}ms` }}
+              >
                 <span className="feature-number">
                   {number} <span aria-hidden="true">↗</span>
                 </span>
@@ -196,7 +215,7 @@ export default function Home() {
         </section>
         <section className="developer-section" id="desenvolvedores">
           <div className="container developer-grid">
-            <div>
+            <div data-reveal>
               <p className="eyebrow">02 / PARA DESENVOLVEDORES</p>
               <h2>
                 Pagamentos que
@@ -225,13 +244,23 @@ export default function Home() {
                 Criar minha conta <span aria-hidden="true">↗</span>
               </a>
             </div>
-            <div className="code-panel">
+            <div className="code-panel" data-reveal>
               <div className="code-header">
                 <span>criar-cobranca.sh</span>
                 <span>REST API</span>
               </div>
               <pre>
-                <code>{code}</code>
+                <code>
+                  {codeLines.map((line, index) => (
+                    <span
+                      className="code-line"
+                      key={`${index}-${line}`}
+                      style={{ animationDelay: `${index * 110}ms` }}
+                    >
+                      {line || " "}
+                    </span>
+                  ))}
+                </code>
               </pre>
               <div className="code-note">
                 Exemplo de requisição · substitua as variáveis e o UUID pelos
@@ -253,19 +282,19 @@ export default function Home() {
             </a>
           </div>
           <div className="steps">
-            <article>
+            <article data-reveal>
               <span>01</span>
               <h3>Crie sua conta</h3>
               <p>Cadastre-se no app e informe os dados da sua empresa.</p>
             </article>
-            <article>
+            <article data-reveal style={{ transitionDelay: "90ms" }}>
               <span>02</span>
               <h3>Configure sua operação</h3>
               <p>
                 Conclua o cadastro e acompanhe a análise da empresa pelo painel.
               </p>
             </article>
-            <article>
+            <article data-reveal style={{ transitionDelay: "180ms" }}>
               <span>03</span>
               <h3>Escolha como integrar</h3>
               <p>
@@ -276,14 +305,14 @@ export default function Home() {
           </div>
         </section>
         <section className="faq-section container" id="duvidas">
-          <div>
+          <div data-reveal>
             <p className="eyebrow">ANTES DE COMEÇAR</p>
             <h2>Vamos esclarecer.</h2>
             <a className="text-link" href={CONTACT_URL}>
               Fale com a equipe <span aria-hidden="true">↗</span>
             </a>
           </div>
-          <div className="faqs">
+          <div className="faqs" data-reveal>
             <details>
               <summary>Preciso ser desenvolvedor para usar?</summary>
               <p>
@@ -319,7 +348,7 @@ export default function Home() {
             </details>
           </div>
         </section>
-        <section className="closing container">
+        <section className="closing container" data-reveal>
           <div>
             <p className="eyebrow">CONSTRUA SEU PRÓXIMO PASSO</p>
             <h2>
