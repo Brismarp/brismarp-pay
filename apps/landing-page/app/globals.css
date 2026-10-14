@@ -815,3 +815,103 @@ pre code {
   .payment-scene { min-width: 0; padding-inline: 18px; }
   .scene-label { font-size: 8px; letter-spacing: 1px; gap: 8px; }
 }
+
+/* Direction inspired by bold payment product sites, using Brismarp greens. */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: rgb(247 248 242 / 94%);
+  backdrop-filter: blur(14px);
+}
+.hero {
+  position: relative;
+  overflow: hidden;
+  background: #17372b;
+  color: #f7f8f2;
+}
+.hero::before {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgb(225 242 203 / 10%) 0.75px, transparent 0.75px);
+  background-size: 19px 19px;
+  content: "";
+  pointer-events: none;
+}
+.hero-grid,
+.hero .methods {
+  position: relative;
+}
+.hero .eyebrow,
+.hero .scene-label,
+.hero .scene-bottom {
+  color: #bfceb9;
+}
+.hero .status-dot {
+  background: #d9ef8e;
+  box-shadow: 0 0 14px rgb(217 239 142 / 52%);
+}
+.hero h1 {
+  font-weight: 600;
+  letter-spacing: -0.065em;
+}
+.hero h1 > span {
+  color: #d9ef8e;
+}
+.hero .lede {
+  color: #d0ded3;
+}
+.hero .hero-note {
+  color: #a9beae;
+}
+.hero .primary {
+  background: #d9ef8e;
+  color: #17372b;
+}
+.hero .primary:hover {
+  background: #e4f6ac;
+}
+.hero .text-link {
+  color: #f7f8f2;
+}
+.hero .payment-scene {
+  box-shadow: 0 32px 90px rgb(3 21 15 / 24%);
+}
+.hero .methods {
+  border-color: rgb(238 246 225 / 19%);
+}
+.hero .methods > span:first-child,
+.hero .methods-note {
+  color: #bfceb9;
+}
+.hero .methods strong {
+  color: #f7f8f2;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+}
+.feature {
+  transition: transform 180ms ease, border-color 180ms ease;
+}
+.feature:hover {
+  transform: translateY(-4px);
+  border-color: #8ca66f;
+}
+.developer-section {
+  background-image: radial-gradient(rgb(226 241 201 / 8%) 0.75px, transparent 0.75px);
+  background-size: 19px 19px;
+}
+.button {
+  transition: transform 150ms ease, background-color 150ms ease;
+}
+.button:hover {
+  transform: translateY(-2px);
+  text-decoration: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
