@@ -54,7 +54,7 @@ make dev      # API + web + worker
 
 Acesse `http://localhost:3000` (redireciona para login, onboarding ou dashboard). `make help` lista os outros alvos (`api`, `web`, `worker`, `test`, `test-e2e`, `test-ui`, `docker`).
 
-Dependências ficam em `apps/api` e `apps/web` — não há `package.json` na raiz.
+Cada projeto (`apps/api`, `apps/web` e `apps/landing-page`) possui suas próprias dependências — não há `package.json` na raiz.
 
 ## Como executar com Docker
 
@@ -169,3 +169,7 @@ A API pública que o lojista vê continua Brismar Pay. Por baixo, `PAYMENT_PROVI
 ## Atualização Redis / Arquitetura Assíncrona
 
 Foi adicionada uma camada Redis para estado de pagamentos, idempotência, locks e deduplicação de webhooks, além de uma fila BullMQ para recuperação. Consulte `docs/IMPLEMENTACAO_REDIS_GETNET_CHECKLIST.md`.
+
+## Landing page institucional
+
+`apps/landing-page` contém o site público em Next.js, exportado como HTML/CSS estático, sem backend ou banco próprio. Execute `npm ci` e `npm run dev` nessa pasta (porta 3002); `npm run build` gera `out/`. Cadastro e login direcionam para o app existente. Veja [o README da landing page](apps/landing-page/README.md).
