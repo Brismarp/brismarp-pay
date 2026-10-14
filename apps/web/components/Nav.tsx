@@ -51,7 +51,7 @@ export function Nav() {
         <Link
           href="/dashboard"
           className="merchant-brand"
-          aria-label="Brismar Pay, visão geral"
+          aria-label="Brismarp Pay, visão geral"
           onClick={() => setMenuOpen(false)}
         >
           <span className="merchant-brand-mark" aria-hidden="true">
@@ -87,7 +87,7 @@ export function Nav() {
         <Link
           href="/dashboard"
           className="merchant-brand merchant-sidebar-brand"
-          aria-label="Brismar Pay, visão geral"
+          aria-label="Brismarp Pay, visão geral"
         >
           <span className="merchant-brand-mark" aria-hidden="true">
             B
@@ -155,7 +155,7 @@ export function Nav() {
               B
             </span>
             <span>
-              <strong>BrismarPay</strong>
+              <strong>Brismarp Pay</strong>
               <small>Pagamentos com clareza.</small>
             </span>
           </div>

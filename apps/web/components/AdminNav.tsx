@@ -27,7 +27,7 @@ export function AdminNav() {
   return (
     <nav className="border-b border-brand-900 bg-brand-900">
       <div className="max-w-5xl mx-auto px-6 h-14 flex items-center gap-6">
-        <span className="font-semibold text-white text-sm">Brismar Pay · Admin</span>
+        <span className="font-semibold text-white text-sm">Brismarp Pay · Admin</span>
         {LINKS.map((link) => (
           <Link
             key={link.href}

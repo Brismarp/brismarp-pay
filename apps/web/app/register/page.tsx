@@ -31,7 +31,7 @@ export default function RegisterPage() {
     <main className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <h1 className="text-2xl font-semibold text-brand-900 mb-1">Criar conta</h1>
-        <p className="text-brand-600 mb-8 text-sm">Comece a usar a Brismar Pay na sua empresa.</p>
+        <p className="text-brand-600 mb-8 text-sm">Comece a usar a Brismarp Pay na sua empresa.</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

@@ -32,7 +32,7 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-semibold text-brand-900 mb-1">Brismar Pay</h1>
+        <h1 className="text-2xl font-semibold text-brand-900 mb-1">Brismarp Pay</h1>
         <p className="text-brand-600 mb-8 text-sm">Entre na sua conta empresarial.</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">

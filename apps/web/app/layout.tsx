@@ -3,7 +3,7 @@ import { SandboxBanner } from '@/components/SandboxBanner';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Brismar Pay',
+  title: 'Brismarp Pay',
   description: 'Gateway de pagamentos B2B para empresas no Brasil.',
 };
 
